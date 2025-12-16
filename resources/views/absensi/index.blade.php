@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
 @section('header')
-Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
+Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{ $jadwal->tanggal_mulai }}
 @endsection
 
 @section('content')
 
 @if(session('success'))
-<div class="mb-4 p-3 rounded bg-green-100 text-green-700">
+<div class="mb-4 p-3 rounded-lg bg-green-100 text-green-700 border border-green-200">
     {{ session('success') }}
 </div>
 @endif
@@ -15,32 +15,33 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
 <form action="{{ route('absensi.store', $jadwal->id) }}" method="POST">
 @csrf
 
-<div class="bg-white rounded-lg shadow overflow-x-auto">
+<div class="bg-white border border-[#E3EEF0]
+            rounded-2xl shadow-sm overflow-x-auto">
 
-<table class="min-w-full text-sm border">
-<thead class="bg-gray-100">
-<tr>
-    <th class="px-4 py-3 w-12">No</th>
+<table class="min-w-full text-sm">
+<thead class="bg-[#F6FAFB] border-b border-[#E3EEF0]">
+<tr class="text-gray-600">
+    <th class="px-4 py-3 w-12 text-left">No</th>
     <th class="px-4 py-3 text-left">Nama Peserta</th>
     <th class="px-4 py-3 text-center">Hadir</th>
     <th class="px-4 py-3 text-center">Sakit</th>
     <th class="px-4 py-3 text-center">Izin</th>
     <th class="px-4 py-3 text-center">Alfa</th>
-    <th class="px-4 py-3">Keterangan</th>
+    <th class="px-4 py-3 text-left">Keterangan</th>
 </tr>
 </thead>
 
-<tbody class="divide-y">
+<tbody class="divide-y divide-[#E3EEF0]">
 @foreach($pesertas as $i => $p)
 
 @php
     $absen = $absensiMap[$p->id] ?? null;
 @endphp
 
-<tr class="hover:bg-gray-50">
+<tr class="hover:bg-[#F6FAFB] transition">
     <td class="px-4 py-2">{{ $i + 1 }}</td>
 
-    <td class="px-4 py-2 font-medium">
+    <td class="px-4 py-2 font-medium text-gray-800">
         {{ $p->nama }}
     </td>
 
@@ -49,7 +50,8 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
         <input type="checkbox"
             name="absensi[{{ $p->id }}][status]"
             value="hadir"
-            class="status-checkbox"
+            class="status-checkbox rounded border-gray-300
+                   text-[#8FBFC2] focus:ring-[#8FBFC2]"
             data-peserta="{{ $p->id }}"
             {{ $absen?->status === 'hadir' ? 'checked' : '' }}>
     </td>
@@ -59,7 +61,8 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
         <input type="checkbox"
             name="absensi[{{ $p->id }}][status]"
             value="sakit"
-            class="status-checkbox"
+            class="status-checkbox rounded border-gray-300
+                   text-[#8FBFC2] focus:ring-[#8FBFC2]"
             data-peserta="{{ $p->id }}"
             {{ $absen?->status === 'sakit' ? 'checked' : '' }}>
     </td>
@@ -69,7 +72,8 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
         <input type="checkbox"
             name="absensi[{{ $p->id }}][status]"
             value="izin"
-            class="status-checkbox"
+            class="status-checkbox rounded border-gray-300
+                   text-[#8FBFC2] focus:ring-[#8FBFC2]"
             data-peserta="{{ $p->id }}"
             {{ $absen?->status === 'izin' ? 'checked' : '' }}>
     </td>
@@ -79,7 +83,8 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
         <input type="checkbox"
             name="absensi[{{ $p->id }}][status]"
             value="alfa"
-            class="status-checkbox"
+            class="status-checkbox rounded border-gray-300
+                   text-[#8FBFC2] focus:ring-[#8FBFC2]"
             data-peserta="{{ $p->id }}"
             {{ $absen?->status === 'alfa' ? 'checked' : '' }}>
     </td>
@@ -89,7 +94,10 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
         <input type="text"
             name="absensi[{{ $p->id }}][keterangan]"
             value="{{ $absen->keterangan ?? '' }}"
-            class="w-full px-3 py-1 border rounded text-sm"
+            class="w-full bg-white border border-[#E3EEF0]
+                   rounded-lg px-3 py-1.5 text-sm
+                   focus:ring-2 focus:ring-[#8FBFC2]/60
+                   focus:border-[#8FBFC2]"
             placeholder="Opsional">
     </td>
 </tr>
@@ -99,21 +107,26 @@ Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{$jadwal->tanggal_mulai}}
 </table>
 </div>
 
-<div class="mt-4 flex justify-end">
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
-        💾 Simpan Absensi
+<div class="mt-5 flex justify-end">
+    <button
+        class="inline-flex items-center gap-2
+               bg-gradient-to-r from-[#8FBFC2] to-[#7AAEB1]
+               hover:from-[#7AAEB1] hover:to-[#6FA9AD]
+               text-gray-900 font-semibold
+               px-6 py-2.5 rounded-xl
+               shadow-sm transition">
+        <i data-feather="save" class="w-4 h-4"></i>
+        Simpan Absensi
     </button>
 </div>
 
 </form>
 
-{{-- SCRIPT EKSKLUSIF CHECKBOX --}}
+{{-- SCRIPT EKSKLUSIF CHECKBOX (TETAP) --}}
 <script>
 document.querySelectorAll('.status-checkbox').forEach(cb => {
     cb.addEventListener('change', function () {
-
         const pesertaId = this.dataset.peserta;
-
         if (this.checked) {
             document
                 .querySelectorAll(

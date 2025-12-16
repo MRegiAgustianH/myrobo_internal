@@ -7,13 +7,15 @@ Dashboard Admin Sekolah
 @section('content')
 
 {{-- INFO SEKOLAH --}}
-<div class="bg-white rounded-xl shadow p-4 mb-4">
+<div class="bg-[#F6FAFB] border border-[#E3EEF0]
+            rounded-2xl shadow-sm p-5 mb-6">
     <p class="text-xs text-gray-500">Sekolah</p>
-    <p class="text-lg font-semibold">
+    <p class="text-lg font-semibold text-gray-800">
         {{ Auth::user()->sekolah->nama_sekolah ?? '-' }}
     </p>
-    <p class="text-xs text-gray-500">
-        Periode {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}
+    <p class="text-xs text-gray-500 mt-1">
+        Periode
+        {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}
         {{ $tahun }}
     </p>
 </div>
@@ -22,45 +24,83 @@ Dashboard Admin Sekolah
 <div class="grid grid-cols-1 gap-4 mb-6">
 
     {{-- ABSENSI --}}
-    <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4">
-        <p class="text-sm text-blue-700">Total Absensi</p>
-        <p class="text-2xl font-bold text-blue-900">
-            {{ $rekapAbsensi }}
-        </p>
+    <div
+        class="bg-white border border-[#E3EEF0]
+               rounded-2xl shadow-sm p-5">
+
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Total Absensi</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    {{ $rekapAbsensi }}
+                </p>
+            </div>
+            <div
+                class="w-10 h-10 rounded-full
+                       bg-[#F6FAFB] border border-[#E3EEF0]
+                       flex items-center justify-center">
+                <i data-feather="clipboard" class="w-5 h-5 text-gray-500"></i>
+            </div>
+        </div>
 
         <a href="{{ route('absensi.rekap.filter', ['sekolah_id' => Auth::user()->sekolah_id]) }}"
-           class="inline-block mt-2 text-xs text-blue-700 underline">
+           class="inline-flex items-center gap-1 mt-3 text-xs text-gray-600 hover:underline">
             Lihat Rekap Absensi
+            <i data-feather="arrow-right" class="w-3 h-3"></i>
         </a>
     </div>
 
     {{-- PEMBAYARAN --}}
-    <div class="bg-green-50 border-l-4 border-green-600 rounded-lg p-4">
-        <p class="text-sm text-green-700">Total Pembayaran</p>
-        <p class="text-2xl font-bold text-green-900">
-            Rp {{ number_format($totalPembayaran, 0, ',', '.') }}
-        </p>
+    <div
+        class="bg-white border border-[#E3EEF0]
+               rounded-2xl shadow-sm p-5">
+
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Total Pembayaran</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    Rp {{ number_format($totalPembayaran, 0, ',', '.') }}
+                </p>
+            </div>
+            <div
+                class="w-10 h-10 rounded-full
+                       bg-[#F6FAFB] border border-[#E3EEF0]
+                       flex items-center justify-center">
+                <i data-feather="credit-card" class="w-5 h-5 text-gray-500"></i>
+            </div>
+        </div>
 
         <a href="{{ route('pembayaran.rekap', ['sekolah_id' => Auth::user()->sekolah_id]) }}"
-           class="inline-block mt-2 text-xs text-green-700 underline">
+           class="inline-flex items-center gap-1 mt-3 text-xs text-gray-600 hover:underline">
             Lihat Rekap Pembayaran
+            <i data-feather="arrow-right" class="w-3 h-3"></i>
         </a>
     </div>
 
 </div>
 
 {{-- CETAK LAPORAN --}}
-<div class="bg-white rounded-xl shadow p-4">
-    <p class="font-semibold mb-3">📄 Laporan Bulanan</p>
+<div class="bg-[#F6FAFB] border border-[#E3EEF0]
+            rounded-2xl shadow-sm p-5">
 
-    <div class="flex flex-col gap-2">
+    <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <i data-feather="file-text" class="w-4 h-4 text-gray-500"></i>
+        Laporan Bulanan
+    </h3>
+
+    <div class="flex flex-col gap-3">
+
         <a href="{{ route('absensi.rekap.export-pdf', [
                 'sekolah_id' => Auth::user()->sekolah_id,
                 'tanggal_mulai' => now()->startOfMonth()->toDateString(),
                 'tanggal_selesai' => now()->endOfMonth()->toDateString()
             ]) }}"
            target="_blank"
-           class="bg-blue-600 text-white text-sm px-4 py-2 rounded text-center">
+           class="inline-flex items-center justify-center gap-2
+                  bg-[#8FBFC2] hover:bg-[#6FA9AD]
+                  text-gray-900 text-sm font-medium
+                  px-4 py-2.5 rounded-lg transition">
+            <i data-feather="printer" class="w-4 h-4"></i>
             Cetak Rekap Absensi
         </a>
 
@@ -70,9 +110,15 @@ Dashboard Admin Sekolah
                 'tahun' => $tahun
             ]) }}"
            target="_blank"
-           class="bg-green-600 text-white text-sm px-4 py-2 rounded text-center">
+           class="inline-flex items-center justify-center gap-2
+                  bg-white border border-[#E3EEF0]
+                  hover:bg-[#F6FAFB]
+                  text-gray-800 text-sm font-medium
+                  px-4 py-2.5 rounded-lg transition">
+            <i data-feather="printer" class="w-4 h-4"></i>
             Cetak Rekap Pembayaran
         </a>
+
     </div>
 </div>
 

@@ -29,6 +29,7 @@ class UserSeeder extends Seeder
                 'role'     => 'instruktur',
             ]
         );
+        
 
         // ADMIN SEKOLAH
         User::updateOrCreate(
@@ -37,6 +38,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Admin Sekolah',
                 'password' => Hash::make('sekolah123'),
                 'role'     => 'admin_sekolah',
+                'sekolah_id' => 1,
             ]
         );
     }

@@ -17,9 +17,9 @@ class Terbilang
         if ($number < 12) {
             return $words[$number];
         } elseif ($number < 20) {
-            return self::convert($number - 10) . " belas";
+            return self::convert($number - 10) . " Belas";
         } elseif ($number < 100) {
-            return self::convert(intval($number / 10)) . " puluh " . self::convert($number % 10);
+            return self::convert(intval($number / 10)) . " Puluh " . self::convert($number % 10);
         } elseif ($number < 200) {
             return "seratus " . self::convert($number - 100);
         } elseif ($number < 1000) {

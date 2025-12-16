@@ -16,7 +16,10 @@
 
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 
+    <script src="https://unpkg.com/feather-icons"></script>
+
 </head>
+
 
 <body class="font-sans antialiased bg-gray-100">
 
@@ -61,7 +64,9 @@
 
 @stack('scripts')
 
-
+<script>
+    feather.replace()
+</script>
 </body>
 
 

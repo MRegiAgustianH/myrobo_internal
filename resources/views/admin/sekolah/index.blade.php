@@ -223,7 +223,4 @@ function confirmDelete(e) {
 }
 </script>
 
-
-
-
 @endsection
