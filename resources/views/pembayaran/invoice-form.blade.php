@@ -6,6 +6,7 @@ Cetak Invoice Sekolah
 
 @section('content')
 
+
 <div class="max-w-xl mx-auto">
 
     {{-- CARD --}}

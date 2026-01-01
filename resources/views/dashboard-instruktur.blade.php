@@ -26,6 +26,7 @@ Dashboard Instruktur
         <i data-feather="calendar" class="w-4 h-4 text-gray-500"></i>
         Jadwal Hari Ini
     </h2>
+{{-- {{ dd($jadwalsHariIni) }} --}}
 
     @forelse($jadwalsHariIni as $j)
         <div

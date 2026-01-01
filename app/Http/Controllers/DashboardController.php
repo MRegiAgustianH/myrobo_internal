@@ -13,23 +13,30 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
-        $user = auth()->user();
 
-        // ======================
-        // ADMIN
-        // ======================
-        if ($user->role === 'admin') {
-            return view('dashboard', [
-                'totalSekolah'    => Sekolah::count(),
-                'totalPeserta'    => Peserta::count(),
-                'totalInstruktur' => User::where('role', 'instruktur')->count(),
-                'totalJadwal'     => Jadwal::count(),
-                'pembayaranBelum' => Pembayaran::where('status', 'belum')->count(),
-                'pembayaranLunas' => Pembayaran::where('status', 'lunas')->count(),
-            ]);
-        }elseif ($user->role === 'admin_sekolah') {
+public function index()
+{
+    
+    $user = auth()->user();
+
+    // ======================
+    // ADMIN
+    // ======================
+    if ($user->role === 'admin') {
+        return view('dashboard', [
+            'totalSekolah'    => Sekolah::count(),
+            'totalPeserta'    => Peserta::count(),
+            'totalInstruktur' => User::where('role', 'instruktur')->count(),
+            'totalJadwal'     => Jadwal::count(),
+            'pembayaranBelum' => Pembayaran::where('status', 'belum')->count(),
+            'pembayaranLunas' => Pembayaran::where('status', 'lunas')->count(),
+        ]);
+    }
+
+    // ======================
+    // ADMIN SEKOLAH
+    // ======================
+    if ($user->role === 'admin_sekolah') {
 
         $bulan = now()->month;
         $tahun = now()->year;
@@ -52,12 +59,15 @@ class DashboardController extends Controller
         ));
     }
 
-        // ======================
-        // INSTRUKTUR
-        // ======================
+    // ======================
+    // INSTRUKTUR
+    // ======================
+    if ($user->role === 'instruktur') {
+
         $jadwalsHariIni = $user->jadwals()
             ->whereDate('tanggal_mulai', Carbon::today())
             ->with('sekolah')
+            ->orderBy('jam_mulai')
             ->get();
 
         $jadwalsMingguan = $user->jadwals()
@@ -67,16 +77,26 @@ class DashboardController extends Controller
             ])
             ->with('sekolah')
             ->orderBy('tanggal_mulai')
+            ->orderBy('jam_mulai')
             ->get();
+
+//             dd(
+//     Carbon::today()->toDateString(),
+//     $user->jadwals()->pluck('tanggal_mulai')
+// );
+
 
         return view('dashboard-instruktur', compact(
             'jadwalsHariIni',
             'jadwalsMingguan'
         ));
-
-        
-
-    abort(403);
     }
+
+    // ======================
+    // ROLE TIDAK VALID
+    // ======================
+    abort(403);
+}
+
     
 }

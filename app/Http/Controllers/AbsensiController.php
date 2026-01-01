@@ -16,6 +16,7 @@ class AbsensiController extends Controller
     public function index(Jadwal $jadwal)
     {
         // hanya instruktur terkait atau admin
+        
         if (
             auth()->user()->role === 'instruktur' &&
             !$jadwal->instrukturs->contains(auth()->id())
