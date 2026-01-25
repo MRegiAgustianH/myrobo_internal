@@ -7,6 +7,7 @@ use App\Models\Sekolah;
 use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\ValidationException;
 
 class PembayaranController extends Controller
 {
@@ -170,59 +171,84 @@ class PembayaranController extends Controller
 
 
     public function invoiceForm()
-    {
-        return view('pembayaran.invoice-form', [
-            'sekolahs' => Sekolah::all(),
+{
+    return view('pembayaran.invoice-form', [
+        'sekolahs' => Sekolah::all(),
+    ]);
+}
+
+/**
+ * 🔎 CEK DATA PEMBAYARAN (AJAX)
+ */
+public function checkInvoiceData(Request $request)
+{
+    $request->validate([
+        'sekolah_id' => 'required|exists:sekolahs,id',
+        'bulan'      => 'required|integer|min:1|max:12',
+        'tahun'      => 'required|integer',
+    ]);
+
+    $count = Pembayaran::where('sekolah_id', $request->sekolah_id)
+        ->where('bulan', (int) $request->bulan)
+        ->where('tahun', (int) $request->tahun)
+        ->where('status', 'lunas')
+        ->count();
+
+    if ($count === 0) {
+        throw ValidationException::withMessages([
+            'invoice' => ['Data pembayaran lunas tidak tersedia untuk periode tersebut.']
         ]);
     }
 
-    public function invoicePdf(Request $request)
-    {
-        $request->validate([
-            'sekolah_id' => 'required|exists:sekolahs,id',
-            'bulan'      => 'required|integer|min:1|max:12',
-            'tahun'      => 'required|integer',
-        ]);
+    return response()->json([
+        'status' => 'ok',
+        'jumlah' => $count
+    ]);
+}
 
-        // ===============================
-        // CAST AMAN UNTUK CARBON
-        // ===============================
-        $bulan = (int) $request->bulan;
-        $tahun = (int) $request->tahun;
+/**
+ * 🧾 CETAK PDF (GET ONLY)
+ */
+public function invoicePdf(Request $request)
+{
+    $request->validate([
+        'sekolah_id' => 'required|exists:sekolahs,id',
+        'bulan'      => 'required|integer|min:1|max:12',
+        'tahun'      => 'required|integer',
+    ]);
 
-        $sekolah = Sekolah::findOrFail($request->sekolah_id);
+    $bulan = (int) $request->bulan;
+    $tahun = (int) $request->tahun;
 
-        // ===============================
-        // AMBIL PEMBAYARAN (LUNAS SAJA)
-        // ===============================
-        $pembayarans = Pembayaran::with('peserta')
-            ->where('sekolah_id', $sekolah->id)
-            ->where('bulan', $bulan)
-            ->where('tahun', $tahun)
-            ->where('status', 'lunas')
-            ->orderBy('peserta_id')
-            ->get();
+    $sekolah = Sekolah::findOrFail($request->sekolah_id);
 
-        // ===============================
-        // HITUNG TOTAL & JUMLAH PESERTA
-        // ===============================
-        $total = $pembayarans->sum('jumlah');
-        $jumlahPeserta = $pembayarans->count();
+    $pembayarans = Pembayaran::with('peserta')
+        ->where('sekolah_id', $sekolah->id)
+        ->where('bulan', $bulan)
+        ->where('tahun', $tahun)
+        ->where('status', 'lunas')
+        ->orderBy('peserta_id')
+        ->get();
 
-        // ===============================
-        // NAMA FILE AMAN
-        // ===============================
-        $filename = 'invoice-' .
-            str_replace(' ', '-', strtolower($sekolah->nama_sekolah)) .
-            "-{$bulan}-{$tahun}.pdf";
-
-        return Pdf::loadView('pembayaran.invoice-pdf', [
-            'sekolah'        => $sekolah,
-            'pembayarans'    => $pembayarans,
-            'bulan'          => $bulan,
-            'tahun'          => $tahun,
-            'total'          => $total,
-            'jumlahPeserta'  => $jumlahPeserta,
-        ])->stream($filename);
+    // safety net (harusnya tidak kena)
+    if ($pembayarans->isEmpty()) {
+        abort(404, 'Invoice tidak ditemukan');
     }
+
+    $total = $pembayarans->sum('jumlah');
+    $jumlahPeserta = $pembayarans->count();
+
+    $filename = 'invoice-' .
+        str_replace(' ', '-', strtolower($sekolah->nama_sekolah)) .
+        "-{$bulan}-{$tahun}.pdf";
+
+    return Pdf::loadView('pembayaran.invoice-pdf', compact(
+        'sekolah',
+        'pembayarans',
+        'bulan',
+        'tahun',
+        'total',
+        'jumlahPeserta'
+    ))->stream($filename);
+}
 }

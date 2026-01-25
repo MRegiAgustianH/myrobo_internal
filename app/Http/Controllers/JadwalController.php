@@ -7,6 +7,7 @@ use App\Models\Jadwal;
 use App\Models\Materi;
 use App\Models\Sekolah;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class JadwalController extends Controller
 {
@@ -88,23 +89,23 @@ class JadwalController extends Controller
     // ===============================
     foreach ($request->instrukturs as $instrukturId) {
 
-        $bentrok = \App\Models\Jadwal::whereHas('instrukturs', function ($q) use ($instrukturId) {
-                $q->where('users.id', $instrukturId);
-            })
-            ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
-            ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
-            ->where(function ($q) use ($request) {
-                $q->where('jam_mulai', '<', $request->jam_selesai)
-                  ->where('jam_selesai', '>', $request->jam_mulai);
-            })
-            ->exists();
+    $bentrok = \App\Models\Jadwal::whereHas('instrukturs', function ($q) use ($instrukturId) {
+            $q->where('users.id', $instrukturId);
+        })
+        ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
+        ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
+        ->where(function ($q) use ($request) {
+            $q->where('jam_mulai', '<', $request->jam_selesai)
+              ->where('jam_selesai', '>', $request->jam_mulai);
+        })
+        ->exists();
 
-        if ($bentrok) {
-            return back()->withErrors([
-                'instrukturs' => 'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
-            ]);
-        }
+    if ($bentrok) {
+        throw ValidationException::withMessages([
+            'instrukturs' => 'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
+        ]);
     }
+}
 
     // ===============================
     // SIMPAN JADWAL
@@ -132,65 +133,76 @@ class JadwalController extends Controller
 
 
     public function update(Request $request, Jadwal $jadwal)
-    {
-        // ===============================
-        // VALIDASI
-        // ===============================
-        $request->validate([
-            'sekolah_id'       => 'required',
-            'nama_kegiatan'    => 'required|string',
-            'tanggal_mulai'    => 'required|date',
-            'tanggal_selesai'  => 'required|date|after_or_equal:tanggal_mulai',
-            'jam_mulai'        => 'required',
-            'jam_selesai'      => 'required|after:jam_mulai',
-            'instrukturs'      => 'required|array|min:1',
-        ]);
+{
+    // ===============================
+    // VALIDASI
+    // ===============================
+    $request->validate([
+        'sekolah_id'       => 'required|exists:sekolahs,id',
+        'nama_kegiatan'    => 'required|string',
+        'tanggal_mulai'    => 'required|date',
+        'tanggal_selesai'  => 'required|date|after_or_equal:tanggal_mulai',
+        'jam_mulai'        => 'required',
+        'jam_selesai'      => 'required|after:jam_mulai',
+        'instrukturs'      => 'required|array|min:1',
+        'instrukturs.*'    => 'exists:users,id',
+        'materis'          => 'nullable|array',
+        'materis.*'        => 'exists:materis,id',
+        'status'           => 'nullable|in:aktif,nonaktif',
+    ]);
 
-        // ===============================
-        // CEK BENTROK (KECUALI DIRI SENDIRI)
-        // ===============================
-        foreach ($request->instrukturs as $instrukturId) {
+    // ===============================
+    // CEK BENTROK (KECUALI JADWAL INI)
+    // ===============================
+    foreach ($request->instrukturs as $instrukturId) {
 
-            $bentrok = Jadwal::where('id', '!=', $jadwal->id)
-                ->whereHas('instrukturs', function ($q) use ($instrukturId) {
-                    $q->where('users.id', $instrukturId);
-                })
-                ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
-                ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
-                ->where(function ($q) use ($request) {
-                    $q->where('jam_mulai', '<', $request->jam_selesai)
-                    ->where('jam_selesai', '>', $request->jam_mulai);
-                })
-                ->exists();
+        $bentrok = Jadwal::where('id', '!=', $jadwal->id)
+            ->whereHas('instrukturs', function ($q) use ($instrukturId) {
+                $q->where('users.id', $instrukturId);
+            })
+            ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
+            ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
+            ->where(function ($q) use ($request) {
+                $q->where('jam_mulai', '<', $request->jam_selesai)
+                  ->where('jam_selesai', '>', $request->jam_mulai);
+            })
+            ->exists();
 
-            if ($bentrok) {
-                return back()->withErrors([
-                    'instrukturs' => 'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
-                ]);
-            }
+        if ($bentrok) {
+            throw ValidationException::withMessages([
+                'instrukturs' => [
+                    'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
+                ]
+            ]);
         }
-
-        // ===============================
-        // UPDATE DATA JADWAL
-        // ===============================
-        $jadwal->update([
-            'sekolah_id'      => $request->sekolah_id,
-            'nama_kegiatan'   => $request->nama_kegiatan,
-            'tanggal_mulai'   => $request->tanggal_mulai,
-            'tanggal_selesai' => $request->tanggal_selesai,
-            'jam_mulai'       => $request->jam_mulai,
-            'jam_selesai'     => $request->jam_selesai,
-            'status'          => $request->status ?? 'aktif',
-        ]);
-
-        // ===============================
-        // SINKRON RELASI
-        // ===============================
-        $jadwal->instrukturs()->sync($request->instrukturs);
-        $jadwal->materis()->sync($request->materis ?? []);
-
-        return back()->with('success', 'Jadwal berhasil diperbarui');
     }
+
+    // ===============================
+    // UPDATE DATA JADWAL
+    // ===============================
+    $jadwal->update([
+        'sekolah_id'      => $request->sekolah_id,
+        'nama_kegiatan'   => $request->nama_kegiatan,
+        'tanggal_mulai'   => $request->tanggal_mulai,
+        'tanggal_selesai' => $request->tanggal_selesai,
+        'jam_mulai'       => $request->jam_mulai,
+        'jam_selesai'     => $request->jam_selesai,
+        'status'          => $request->status ?? 'aktif',
+    ]);
+
+    // ===============================
+    // SINKRON RELASI
+    // ===============================
+    $jadwal->instrukturs()->sync($request->instrukturs);
+    $jadwal->materis()->sync($request->materis ?? []);
+
+    // ===============================
+    // RESPONSE (AJAX FRIENDLY)
+    // ===============================
+    return response()->json([
+        'message' => 'Jadwal berhasil diperbarui'
+    ]);
+}
 
 
     public function destroy(Jadwal $jadwal)

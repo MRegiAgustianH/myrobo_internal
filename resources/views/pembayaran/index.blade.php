@@ -146,7 +146,7 @@ $pembayaran = $pembayaranMap[$p->id] ?? null;
 <input type="hidden" name="tahun" value="{{ $tahun }}">
 
 <div class="mt-5 flex justify-end">
-    <button
+    <button 
         class="inline-flex items-center gap-2
                bg-gradient-to-r from-[#8FBFC2] to-[#7AAEB1]
                hover:from-[#7AAEB1] hover:to-[#6FA9AD]

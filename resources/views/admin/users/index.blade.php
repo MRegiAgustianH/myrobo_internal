@@ -24,6 +24,7 @@ Manajemen User
 <thead class="bg-gray-100">
 <tr>
     <th class="px-4 py-2">Nama</th>
+    <th class="px-4 py-2">Username</th>
     <th class="px-4 py-2">Email</th>
     <th class="px-4 py-2">Role</th>
     <th class="px-4 py-2 w-32">Aksi</th>
@@ -33,6 +34,7 @@ Manajemen User
 @foreach($users as $u)
 <tr class="border-t">
     <td class="px-4 py-2">{{ $u->name }}</td>
+    <td class="px-4 py-2">{{ $u->username }}</td>
     <td class="px-4 py-2">{{ $u->email }}</td>
     <td class="px-4 py-2 text-center">
         <span class="px-2 py-1 rounded text-xs bg-gray-100">
@@ -49,7 +51,7 @@ Manajemen User
               method="POST" class="inline"
               onsubmit="return confirmDelete(event)">
             @csrf @method('DELETE')
-            <button class="text-xs bg-red-100 px-2 py-1 rounded">
+            <button type="submit" class="text-xs bg-red-100 px-2 py-1 rounded">
                 Hapus
             </button>
         </form>
@@ -105,6 +107,13 @@ function userForm(data = {}) {
             <label class="block mb-1 font-medium">Nama</label>
             <input id="name" class="w-full px-3 py-2 border rounded"
                 value="${data.name ?? ''}">
+        </div>
+
+        <div>
+            <label class="block mb-1 font-medium">Username</label>
+            <input id="username"
+                class="w-full px-3 py-2 border rounded"
+                value="${data.username ?? ''}">
         </div>
 
         <div>
@@ -168,16 +177,18 @@ function toggleSekolah() {
 
 function handleSubmit(action, method) {
     const name = document.getElementById('name').value;
+    const username = document.getElementById('username').value;
     const email = document.getElementById('email').value;
     const role = document.getElementById('role').value;
 
-    if (!name || !email || !role) {
-        Swal.showValidationMessage('Nama, email, dan role wajib diisi');
+    if (!name || !username || !email || !role) {
+        Swal.showValidationMessage('Nama, username, email, dan role wajib diisi');
         return;
     }
 
     submitForm(action, method);
 }
+
 
 function submitForm(action, method) {
     const form = document.createElement('form');
@@ -194,6 +205,7 @@ function submitForm(action, method) {
         }
 
         <input type="hidden" name="name" value="${document.getElementById('name').value}">
+        <input type="hidden" name="username" value="${document.getElementById('username').value}">
         <input type="hidden" name="email" value="${document.getElementById('email').value}">
         <input type="hidden" name="role" value="${document.getElementById('role').value}">
         <input type="hidden" name="password" value="${document.getElementById('password').value}">

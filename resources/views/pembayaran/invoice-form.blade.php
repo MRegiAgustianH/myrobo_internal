@@ -22,91 +22,135 @@ Cetak Invoice Sekolah
             </p>
         </div>
 
-        <form action="{{ route('pembayaran.invoice.pdf') }}"
-              method="GET" target="_blank">
+        {{-- FORM --}}
+        <div class="space-y-5">
 
-            <div class="space-y-5">
+            {{-- SEKOLAH --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Sekolah
+                </label>
+                <select id="sekolah_id"
+                    class="w-full bg-white border border-[#E3EEF0]
+                           rounded-lg px-3 py-2 text-gray-800"
+                    required>
+                    <option value="">-- Pilih Sekolah --</option>
+                    @foreach($sekolahs as $s)
+                        <option value="{{ $s->id }}">
+                            {{ $s->nama_sekolah }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                {{-- SEKOLAH --}}
+            {{-- BULAN & TAHUN --}}
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Sekolah
+                        Bulan
                     </label>
-                    <select name="sekolah_id"
+                    <select id="bulan"
                         class="w-full bg-white border border-[#E3EEF0]
-                               rounded-lg px-3 py-2
-                               text-gray-800
-                               focus:outline-none
-                               focus:ring-2 focus:ring-[#8FBFC2]/60
-                               focus:border-[#8FBFC2]"
+                               rounded-lg px-3 py-2"
                         required>
-                        <option value="">-- Pilih Sekolah --</option>
-                        @foreach($sekolahs as $s)
-                            <option value="{{ $s->id }}">
-                                {{ $s->nama_sekolah }}
+                        @for($i = 1; $i <= 12; $i++)
+                            <option value="{{ $i }}">
+                                {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
                             </option>
-                        @endforeach
+                        @endfor
                     </select>
                 </div>
 
-                {{-- BULAN & TAHUN --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Bulan
-                        </label>
-                        <select name="bulan"
-                            class="w-full bg-white border border-[#E3EEF0]
-                                   rounded-lg px-3 py-2
-                                   text-gray-800
-                                   focus:outline-none
-                                   focus:ring-2 focus:ring-[#8FBFC2]/60
-                                   focus:border-[#8FBFC2]"
-                            required>
-                            @for($i = 1; $i <= 12; $i++)
-                                <option value="{{ $i }}">
-                                    {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
-                                </option>
-                            @endfor
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Tahun
-                        </label>
-                        <input type="number"
-                               name="tahun"
-                               value="{{ now()->year }}"
-                               class="w-full bg-white border border-[#E3EEF0]
-                                      rounded-lg px-3 py-2
-                                      text-gray-800
-                                      focus:outline-none
-                                      focus:ring-2 focus:ring-[#8FBFC2]/60
-                                      focus:border-[#8FBFC2]"
-                               required>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Tahun
+                    </label>
+                    <input type="number"
+                           id="tahun"
+                           value="{{ now()->year }}"
+                           class="w-full bg-white border border-[#E3EEF0]
+                                  rounded-lg px-3 py-2"
+                           required>
                 </div>
+            </div>
 
-                {{-- ACTION --}}
-                <div class="pt-6 flex justify-end">
-                    <button
+            {{-- ACTION --}}
+            <div class="pt-6 flex justify-end">
+                <button type="button"
+                        onclick="cetakInvoice()"
                         class="inline-flex items-center gap-2
-                               bg-gradient-to-r
-                               from-[#8FBFC2] to-[#7AAEB1]
+                               bg-gradient-to-r from-[#8FBFC2] to-[#7AAEB1]
                                hover:from-[#7AAEB1] hover:to-[#6FA9AD]
                                text-gray-900 font-semibold
                                px-6 py-2.5 rounded-xl
-                               shadow-sm transition-all duration-200">
-                        <i data-feather="file-text" class="w-4 h-4"></i>
-                        Cetak Invoice
-                    </button>
-                </div>
-
+                               shadow-sm transition">
+                    <i data-feather="file-text" class="w-4 h-4"></i>
+                    Cetak Invoice
+                </button>
             </div>
-        </form>
+
+        </div>
+
     </div>
 
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+function cetakInvoice() {
+
+    const sekolah = document.getElementById('sekolah_id').value;
+    const bulan   = document.getElementById('bulan').value;
+    const tahun   = document.getElementById('tahun').value;
+
+    if (!sekolah || !bulan || !tahun) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Data belum lengkap',
+            text: 'Sekolah, bulan, dan tahun wajib dipilih'
+        });
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('sekolah_id', sekolah);
+    formData.append('bulan', bulan);
+    formData.append('tahun', tahun);
+
+    // 🔎 CEK DATA PEMBAYARAN DULU
+    fetch('{{ route("pembayaran.invoice.check") }}', {
+    method: 'POST',
+    body: formData,
+    headers: {
+        'Accept': 'application/json'
+    }
+})
+.then(async response => {
+    if (!response.ok) {
+        const data = await response.json();
+        throw data;
+    }
+
+    // ✅ DATA ADA → BUKA PDF
+    window.open(
+        '{{ route("pembayaran.invoice.pdf") }}' +
+        `?sekolah_id=${sekolah}&bulan=${bulan}&tahun=${tahun}`,
+        '_blank'
+    );
+})
+.catch(error => {
+    Swal.fire({
+        icon: 'error',
+        title: 'Tidak Bisa Cetak Invoice',
+        text: error?.errors
+            ? Object.values(error.errors).flat().join('\n')
+            : 'Data pembayaran tidak tersedia'
+    });
+});
+
+}
+</script>
+@endpush

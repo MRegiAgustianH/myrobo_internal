@@ -7,25 +7,29 @@ Kalender Jadwal Pelatihan
 @section('content')
 
 @if(session('success'))
-<div class="mb-4 p-3 bg-green-100 text-green-700 rounded">
+<div class="mb-4 p-3 bg-green-100 text-green-700 rounded text-sm">
     {{ session('success') }}
 </div>
 @endif
 
-
-
+{{-- ADMIN BUTTON --}}
 @if(auth()->user()->role === 'admin')
 <div class="flex justify-end mb-4">
     <button onclick="openCreateModal()"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700
+               text-white px-4 py-2 rounded text-sm">
         + Tambah Jadwal
     </button>
 </div>
 @endif
 
-<div id="calendar" class="bg-white rounded shadow p-4"></div>
+{{-- CALENDAR CONTAINER --}}
+<div class="bg-white rounded-xl shadow p-3 sm:p-4 overflow-hidden">
+    <div id="calendar" class="w-full"></div>
+</div>
 
 @endsection
+
 
 @push('scripts')
 
@@ -35,16 +39,19 @@ Kalender Jadwal Pelatihan
     const jadwalMap = @json($jadwalMap);
 </script>
 
+@push('scripts')
+
+<script>
+const jadwalMap = @json($jadwalMap);
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    if (typeof FullCalendar === 'undefined') {
-        console.error('FullCalendar belum ter-load');
-        return;
-    }
-
     const calendarEl = document.getElementById('calendar');
-    if (!calendarEl) return;
+    if (!calendarEl || typeof FullCalendar === 'undefined') return;
+
+    const isMobile = window.innerWidth < 640;
 
     const events = [
         @foreach($jadwals as $j)
@@ -53,35 +60,55 @@ document.addEventListener('DOMContentLoaded', function () {
             title: '{{ $j->sekolah->nama_sekolah ?? "-" }}',
             start: '{{ $j->tanggal_mulai }}T{{ $j->jam_mulai }}',
             end: '{{ $j->tanggal_selesai }}T{{ $j->jam_selesai }}',
-
         },
         @endforeach
     ];
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
+        initialView: isMobile ? 'listWeek' : 'dayGridMonth',
         height: 'auto',
 
-        slotMinTime: '06:00:00',
-        slotMaxTime: '20:00:00',
-        slotDuration: '00:30:00',
-        allDaySlot: false,
+        locale: 'id',
 
         headerToolbar: {
-            left: 'prev,next today',
+            left: 'prev,next',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek'
+            right: isMobile ? '' : 'dayGridMonth,timeGridWeek'
         },
 
-        events: events,
+        buttonText: {
+            today: 'Hari Ini',
+            month: 'Bulan',
+            week: 'Minggu',
+            list: 'Daftar'
+        },
+
+        views: {
+            timeGridWeek: {
+                slotMinTime: '06:00:00',
+                slotMaxTime: '20:00:00'
+            }
+        },
+
+        eventDisplay: 'block',
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        },
+
+        events,
 
         eventClick: function(info) {
             @if(auth()->user()->role === 'admin')
-            // nanti kita sambungkan ke modal edit
             openDetailModal(info.event.id);
-
-
             @endif
+        },
+
+        windowResize: function(view) {
+            calendar.changeView(
+                window.innerWidth < 640 ? 'listWeek' : 'dayGridMonth'
+            );
         }
     });
 
@@ -89,20 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-{{-- SWEETALERT ERROR --}}
-@if ($errors->any())
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    Swal.fire({
-        icon: 'error',
-        title: 'Jadwal Bentrok',
-        text: @json($errors->first())
-    });
-});
-</script>
 @endpush
-@endif
 
 
 <script>
@@ -376,12 +390,76 @@ function handleSubmit(action, method) {
 
     if (!nama || !sekolah) {
         Swal.showValidationMessage('Sekolah dan nama kegiatan wajib diisi');
-        return false;
+        return Promise.reject();
     }
 
-    submitForm(action, method);
-    return true;
+    return submitFormAjax(action, method);
 }
+
+//ajax error
+function submitFormAjax(action, method) {
+
+    const instrukturs = [...document.getElementById('instrukturs').selectedOptions]
+        .map(o => o.value);
+
+    const materis = [...document.getElementById('materis').selectedOptions]
+        .map(o => o.value);
+
+    const formData = new FormData();
+    formData.append('_token', document.getElementById('csrf').value);
+    if (method !== 'POST') formData.append('_method', method);
+
+    formData.append('sekolah_id', document.getElementById('sekolah_id').value);
+    formData.append('nama_kegiatan', document.getElementById('nama_kegiatan').value);
+    formData.append('tanggal_mulai', document.getElementById('tanggal_mulai').value);
+    formData.append('tanggal_selesai', document.getElementById('tanggal_selesai').value);
+    formData.append('jam_mulai', document.getElementById('jam_mulai').value);
+    formData.append('jam_selesai', document.getElementById('jam_selesai').value);
+    formData.append('status', document.getElementById('status').value);
+
+    instrukturs.forEach(i => formData.append('instrukturs[]', i));
+    materis.forEach(m => formData.append('materis[]', m));
+
+    return fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(async response => {
+
+        if (!response.ok) {
+            const data = await response.json();
+            return Promise.reject(data);
+        }
+
+        window.location.reload();
+    })
+    .catch(error => {
+
+        let message = 'Terjadi kesalahan saat menyimpan jadwal';
+
+        if (error?.errors) {
+            message = Object.values(error.errors).flat().join('\n');
+        }
+
+        // ⛔ TUTUP MODAL FORM
+        Swal.close();
+
+        // ✅ MODAL ERROR BARU
+        Swal.fire({
+            icon: 'error',
+            title: 'Jadwal Bentrok',
+            text: message,
+            confirmButtonText: 'Mengerti'
+        });
+
+        return Promise.reject();
+    });
+}
+
+
 
 </script>
 

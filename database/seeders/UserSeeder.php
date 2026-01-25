@@ -14,6 +14,7 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@myrobo.id'],
             [
+                'username' => 'admin',
                 'name'     => 'Admin MyRobo',
                 'password' => Hash::make('admin123'),
                 'role'     => 'admin',
@@ -24,6 +25,7 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'instruktur@myrobo.id'],
             [
+                'username' => 'instruktur',
                 'name'     => 'Instruktur MyRobo',
                 'password' => Hash::make('instruktur123'),
                 'role'     => 'instruktur',
@@ -35,6 +37,7 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'adminsekolah@myrobo.id'],
             [
+                'username' => 'adminsekolah',
                 'name'     => 'Admin Sekolah',
                 'password' => Hash::make('sekolah123'),
                 'role'     => 'admin_sekolah',

@@ -18,6 +18,30 @@
 
     <script src="https://unpkg.com/feather-icons"></script>
 
+    <style>
+/* Mobile FullCalendar Fix */
+@media (max-width: 640px) {
+    .fc .fc-toolbar-title {
+        font-size: 1rem;
+    }
+
+    .fc-event {
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
+
+    .fc-list-event-title {
+        font-weight: 600;
+    }
+
+    .fc-list-event-time {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+}
+</style>
+
+
 </head>
 
 

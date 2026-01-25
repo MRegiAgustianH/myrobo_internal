@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('header')
-Data Sekolah 
+Manajemen Sekolah 
 @endsection
 
 @section('content')

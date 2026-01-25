@@ -31,6 +31,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     
     Route::get('/sekolah/{sekolah}/peserta', [PesertaController::class, 'bySekolah'])
     ->name('peserta.bySekolah');
+
+    Route::resource('rapot', RapotController::class);
 });
 
 Route::middleware(['auth','role:admin'])->group(function () {
@@ -130,6 +132,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/pembayaran/invoice', [PembayaranController::class, 'invoiceForm'])
         ->name('pembayaran.invoice.form');
+
+    Route::post('/pembayaran/invoice/check', [PembayaranController::class, 'checkInvoiceData'])
+        ->name('pembayaran.invoice.check');
 
     Route::get('/pembayaran/invoice/pdf', [PembayaranController::class, 'invoicePdf'])
         ->name('pembayaran.invoice.pdf');
