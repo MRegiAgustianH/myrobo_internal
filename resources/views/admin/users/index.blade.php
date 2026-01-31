@@ -6,7 +6,12 @@ Manajemen User
 
 @section('content')
 
-<div class="w-full flex justify-end mb-4">
+{{-- ACTION BAR --}}
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+    <h2 class="text-lg font-semibold text-gray-700">
+        Daftar User
+    </h2>
+
     <button onclick="openCreateModal()"
         class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
         + Tambah User
@@ -19,25 +24,74 @@ Manajemen User
 </div>
 @endif
 
-<div class="bg-white rounded shadow overflow-x-auto">
+{{-- ================= MOBILE CARD VIEW ================= --}}
+<div class="grid grid-cols-1 gap-4 md:hidden">
+
+@foreach($users as $u)
+<div class="bg-white rounded-xl shadow p-4 space-y-3">
+
+    <div>
+        <p class="font-semibold text-gray-800">{{ $u->name }}</p>
+        <p class="text-xs text-gray-500">{{ $u->email }}</p>
+    </div>
+
+    <div class="flex justify-between text-sm">
+        <span class="text-gray-500">Username</span>
+        <span>{{ $u->username }}</span>
+    </div>
+
+    <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-500">Role</span>
+        <span class="px-3 py-1 rounded-full text-xs bg-gray-100">
+            {{ ucfirst(str_replace('_',' ',$u->role)) }}
+        </span>
+    </div>
+
+    <div class="flex gap-2 pt-3">
+        <button onclick='openEditModal(@json($u))'
+            class="flex-1 bg-yellow-100 text-yellow-700 text-xs py-2 rounded">
+            Edit
+        </button>
+
+        <form action="{{ route('users.destroy',$u->id) }}"
+              method="POST"
+              onsubmit="return confirmDelete(event)">
+            @csrf
+            @method('DELETE')
+            <button
+                class="bg-red-100 text-red-700 text-xs px-3 py-2 rounded">
+                Hapus
+            </button>
+        </form>
+    </div>
+
+</div>
+@endforeach
+
+</div>
+
+{{-- ================= DESKTOP TABLE VIEW ================= --}}
+<div class="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
+
 <table class="min-w-full text-sm">
 <thead class="bg-gray-100">
 <tr>
-    <th class="px-4 py-2">Nama</th>
-    <th class="px-4 py-2">Username</th>
-    <th class="px-4 py-2">Email</th>
-    <th class="px-4 py-2">Role</th>
-    <th class="px-4 py-2 w-32">Aksi</th>
+    <th class="px-4 py-3 text-left">Nama</th>
+    <th class="px-4 py-3 text-left">Username</th>
+    <th class="px-4 py-3 text-left">Email</th>
+    <th class="px-4 py-3 text-center">Role</th>
+    <th class="px-4 py-3 text-center w-32">Aksi</th>
 </tr>
 </thead>
-<tbody>
+
+<tbody class="divide-y">
 @foreach($users as $u)
-<tr class="border-t">
-    <td class="px-4 py-2">{{ $u->name }}</td>
+<tr class="hover:bg-gray-50 transition">
+    <td class="px-4 py-2 font-medium">{{ $u->name }}</td>
     <td class="px-4 py-2">{{ $u->username }}</td>
     <td class="px-4 py-2">{{ $u->email }}</td>
     <td class="px-4 py-2 text-center">
-        <span class="px-2 py-1 rounded text-xs bg-gray-100">
+        <span class="px-3 py-1 rounded-full text-xs bg-gray-100">
             {{ ucfirst(str_replace('_',' ',$u->role)) }}
         </span>
     </td>
@@ -48,10 +102,13 @@ Manajemen User
         </button>
 
         <form action="{{ route('users.destroy',$u->id) }}"
-              method="POST" class="inline"
+              method="POST"
+              class="inline"
               onsubmit="return confirmDelete(event)">
-            @csrf @method('DELETE')
-            <button type="submit" class="text-xs bg-red-100 px-2 py-1 rounded">
+            @csrf
+            @method('DELETE')
+            <button type="submit"
+                class="text-xs bg-red-100 px-2 py-1 rounded">
                 Hapus
             </button>
         </form>
@@ -60,6 +117,7 @@ Manajemen User
 @endforeach
 </tbody>
 </table>
+
 </div>
 
 <script>

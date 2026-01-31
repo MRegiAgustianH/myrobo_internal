@@ -21,11 +21,6 @@ class Rapor extends Model
         return $this->belongsTo(Sekolah::class);
     }
 
-    public function peserta()
-    {
-        return $this->belongsTo(Peserta::class);
-    }
-
     public function semester()
     {
         return $this->belongsTo(Semester::class);
@@ -34,6 +29,18 @@ class Rapor extends Model
     {
     return $this->hasMany(NilaiRapor::class);
     }
+
+    public function nilaiRapors()
+    {
+        return $this->hasMany(NilaiRapor::class);
+    }   
+
+    public function peserta()
+    {
+        return $this->belongsTo(Peserta::class, 'peserta_id');
+    }
+
+    
 
 }
 

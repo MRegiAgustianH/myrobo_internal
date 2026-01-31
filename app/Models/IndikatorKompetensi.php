@@ -13,7 +13,7 @@ class IndikatorKompetensi extends Model
         return $this->belongsTo(Kompetensi::class);
     }
 
-    public function raporNilais()
+    public function nilaiRapors()
     {
         return $this->hasMany(NilaiRapor::class);
     }

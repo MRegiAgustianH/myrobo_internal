@@ -8,6 +8,7 @@ use App\Models\Semester;
 use App\Models\Kompetensi;
 use App\Models\Peserta;
 use App\Models\Sekolah;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -162,4 +163,21 @@ class RaporController extends Controller
 
         return back()->with('success', 'Rapor berhasil dihapus');
     }
+
+    
+    public function cetak($id)
+    {
+        $rapor = Rapor::with([
+            'peserta',
+            'semester',
+            'nilaiRapors.indikatorKompetensi.kompetensi'
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('admin.rapor.cetak', compact('rapor'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->stream('rapor-'.$rapor->peserta->nama.'.pdf');
+    }
+
+
 }

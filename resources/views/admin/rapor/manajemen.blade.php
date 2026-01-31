@@ -69,10 +69,12 @@ Manajemen Rapor
         {{-- FOOTER ACTION --}}
         <div class="border-t px-4 py-3 bg-gray-50 flex justify-between gap-2 text-xs">
 
-            <a href="#"
-               class="flex-1 text-center bg-blue-500 hover:bg-blue-600 text-white py-1.5 rounded">
-                Lihat
+            <a href="{{ route('rapor.cetak', $rapor->id) }}"
+            target="_blank"
+            class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 rounded flex items-center justify-center gap-1">
+                Cetak
             </a>
+
 
             <a href="{{ route('rapor.edit', $rapor->id) }}"
                class="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 py-1.5 rounded text-gray-800">

@@ -1,79 +1,136 @@
 @extends('layouts.app')
 
 @section('header')
-Manajemen Sekolah 
+Manajemen Sekolah
 @endsection
 
 @section('content')
 
 {{-- ACTION BAR --}}
-<div class="w-full flex justify-end mb-4">
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+    <h2 class="text-lg font-semibold text-gray-700">
+        Daftar Sekolah Mitra
+    </h2>
+
     <button
         onclick="openCreateModal()"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        class="bg-[#8FBFC2] hover:bg-[#7aaeb2] text-white px-4 py-2 rounded-lg text-sm shadow">
         + Tambah Sekolah
     </button>
 </div>
 
-
 @if(session('success'))
-<div class="mb-4 p-3 rounded bg-green-100 text-green-700">
+<div class="mb-4 p-3 rounded bg-green-100 text-green-700 text-sm">
     {{ session('success') }}
 </div>
 @endif
 
-<div class="bg-white rounded-lg shadow w-full">
+{{-- ================= MOBILE VIEW ================= --}}
+<div class="grid grid-cols-1 gap-4 md:hidden">
 
-    {{-- SCROLL CONTAINER --}}
-    <div
-        class="relative w-full overflow-x-auto overscroll-x-contain
-               touch-pan-x">
+@foreach($sekolahs as $s)
+<div class="bg-white rounded-xl shadow p-4 space-y-3">
 
-        {{-- HINT MOBILE --}}
-        <div class="md:hidden absolute top-2 right-4 text-xs text-gray-400 pointer-events-none">
-            ⇆ geser
-        </div>
+    <div>
+        <p class="font-semibold text-gray-800">
+            {{ $s->nama_sekolah }}
+        </p>
+        <p class="text-xs text-gray-500">
+            {{ $s->alamat }}
+        </p>
+    </div>
 
-        <table class="min-w-[1100px] w-full text-sm border-collapse">
+    <div class="flex justify-between text-sm">
+        <span class="text-gray-500">Kontak</span>
+        <span class="font-medium">{{ $s->kontak }}</span>
+    </div>
+
+    <div class="flex justify-between text-sm">
+        <span class="text-gray-500">Mulai</span>
+        <span class="font-medium">
+            {{ $s->tgl_mulai_kerjasama->format('d/m/Y') }}
+        </span>
+    </div>
+
+    <div class="flex gap-2 pt-3">
+        <a href="{{ route('sekolah.peserta.index',$s->id) }}"
+           class="flex-1 bg-emerald-100 text-emerald-700 text-xs py-2 rounded text-center">
+            Peserta
+        </a>
+
+        <button
+            onclick='openEditModal(@json($s))'
+            class="flex-1 bg-yellow-100 text-yellow-700 text-xs py-2 rounded">
+            Edit
+        </button>
+
+        <form method="POST"
+              action="{{ route('sekolah.destroy',$s->id) }}"
+              onsubmit="return confirmDelete(event)">
+            @csrf
+            @method('DELETE')
+            <button
+                class="bg-red-100 text-red-700 text-xs px-3 py-2 rounded">
+                Hapus
+            </button>
+        </form>
+    </div>
+
+</div>
+@endforeach
+
+</div>
+
+{{-- ================= DESKTOP VIEW ================= --}}
+<div class="hidden md:block bg-white rounded-xl shadow">
+
+    <div class="relative overflow-x-auto">
+        <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b">
                 <tr class="text-gray-600 uppercase text-xs tracking-wider">
-                    <th class="px-4 py-3 text-left whitespace-nowrap">Sekolah</th>
-                    <th class="px-4 py-3 text-center whitespace-nowrap">Kontak</th>
-                    <th class="px-4 py-3 text-center whitespace-nowrap">Mulai</th>
-                    <th class="px-4 py-3 text-center whitespace-nowrap w-40">Aksi</th>
+                    <th class="px-4 py-3 text-left">Sekolah</th>
+                    <th class="px-4 py-3 text-center">Kontak</th>
+                    <th class="px-4 py-3 text-center">Mulai</th>
+                    <th class="px-4 py-3 text-center w-48">Aksi</th>
                 </tr>
             </thead>
 
             <tbody class="divide-y">
             @foreach($sekolahs as $s)
                 <tr class="hover:bg-gray-50 transition">
-                    <td class="px-4 py-3 font-medium whitespace-nowrap">
-                        {{ $s->nama_sekolah }}
+                    <td class="px-4 py-3">
+                        <p class="font-medium">{{ $s->nama_sekolah }}</p>
+                        <p class="text-xs text-gray-500 truncate max-w-xs">
+                            {{ $s->alamat }}
+                        </p>
                     </td>
 
-                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                    <td class="px-4 py-3 text-center">
                         {{ $s->kontak }}
                     </td>
 
-                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                    <td class="px-4 py-3 text-center">
                         {{ $s->tgl_mulai_kerjasama->format('d/m/Y') }}
                     </td>
 
-                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                    <td class="px-4 py-3 text-center">
                         <div class="inline-flex gap-1">
                             <a href="{{ route('sekolah.peserta.index',$s->id) }}"
-                               class="bg-green-100 text-green-700 px-3 py-1 rounded text-xs">
-                               Peserta
+                               class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs">
+                                Peserta
                             </a>
+
                             <button
                                 onclick='openEditModal(@json($s))'
                                 class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
                                 Edit
                             </button>
-                            <form action="{{ route('sekolah.destroy',$s->id) }}"
-                                method="POST" class="inline"
-                                onsubmit="return confirmDelete(event)">
-                                @csrf @method('DELETE')
+
+                            <form method="POST"
+                                  action="{{ route('sekolah.destroy',$s->id) }}"
+                                  onsubmit="return confirmDelete(event)">
+                                @csrf
+                                @method('DELETE')
                                 <button
                                     class="bg-red-100 text-red-700 px-3 py-1 rounded text-xs">
                                     Hapus
@@ -85,18 +142,16 @@ Manajemen Sekolah
             @endforeach
             </tbody>
         </table>
-
     </div>
 </div>
 
-{{-- SWEETALERT --}}
+{{-- ================= SWEETALERT SCRIPT ================= --}}
 <script>
 function openCreateModal() {
     Swal.fire({
         title: 'Tambah Sekolah',
         html: schoolForm(),
         showConfirmButton: false,
-        showCancelButton: false,
         width: 650,
         footer: actionButtons("{{ route('sekolah.store') }}", 'POST')
     });
@@ -107,7 +162,6 @@ function openEditModal(data) {
         title: 'Edit Sekolah',
         html: schoolForm(data),
         showConfirmButton: false,
-        showCancelButton: false,
         width: 650,
         footer: actionButtons(`/sekolah/${data.id}`, 'PUT')
     });
@@ -115,20 +169,14 @@ function openEditModal(data) {
 
 function actionButtons(action, method) {
     return `
-    <div class="w-full flex justify-start gap-2">
-        <button
-            onclick="handleSubmit('${action}', '${method}')"
-            class="btn-primary">
+    <div class="flex gap-2">
+        <button onclick="handleSubmit('${action}','${method}')" class="btn-primary">
             ${method === 'POST' ? 'Simpan' : 'Update'}
         </button>
-
-        <button
-            onclick="Swal.close()"
-            class="btn-secondary">
+        <button onclick="Swal.close()" class="btn-secondary">
             Batal
         </button>
-    </div>
-    `;
+    </div>`;
 }
 
 function schoolForm(data = {}) {
@@ -137,51 +185,44 @@ function schoolForm(data = {}) {
 
     <div class="space-y-4 text-left text-sm">
         <div>
-            <label class="block mb-1 font-medium">Nama Sekolah</label>
+            <label class="font-medium">Nama Sekolah</label>
             <input id="nama" class="w-full px-3 py-2 border rounded"
-                value="${data.nama_sekolah ?? ''}">
+                   value="${data.nama_sekolah ?? ''}">
         </div>
 
         <div>
-            <label class="block mb-1 font-medium">Alamat</label>
+            <label class="font-medium">Alamat</label>
             <textarea id="alamat" class="w-full px-3 py-2 border rounded"
-                rows="2">${data.alamat ?? ''}</textarea>
+                      rows="2">${data.alamat ?? ''}</textarea>
         </div>
 
         <div>
-            <label class="block mb-1 font-medium">Kontak</label>
+            <label class="font-medium">Kontak</label>
             <input id="kontak" class="w-full px-3 py-2 border rounded"
-                value="${data.kontak ?? ''}">
+                   value="${data.kontak ?? ''}">
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label class="block mb-1 font-medium">Mulai Kerja Sama</label>
-                <input id="mulai" type="date"
-                    class="w-full px-3 py-2 border rounded"
-                    value="${data.tgl_mulai_kerjasama ? data.tgl_mulai_kerjasama.substring(0,10) : ''}">
+                <label class="font-medium">Mulai Kerja Sama</label>
+                <input id="mulai" type="date" class="w-full px-3 py-2 border rounded"
+                       value="${data.tgl_mulai_kerjasama ? data.tgl_mulai_kerjasama.substring(0,10) : ''}">
             </div>
 
             <div>
-                <label class="block mb-1 font-medium">Akhir Kerja Sama</label>
-                <input id="akhir" type="date"
-                    class="w-full px-3 py-2 border rounded"
-                    value="${data.tgl_akhir_kerjasama ? data.tgl_akhir_kerjasama.substring(0,10) : ''}">
+                <label class="font-medium">Akhir Kerja Sama</label>
+                <input id="akhir" type="date" class="w-full px-3 py-2 border rounded"
+                       value="${data.tgl_akhir_kerjasama ? data.tgl_akhir_kerjasama.substring(0,10) : ''}">
             </div>
         </div>
-    </div>
-    `;
+    </div>`;
 }
 
 function handleSubmit(action, method) {
-    const nama = document.getElementById('nama').value;
-    const mulai = document.getElementById('mulai').value;
-
-    if (!nama || !mulai) {
+    if (!document.getElementById('nama').value || !document.getElementById('mulai').value) {
         Swal.showValidationMessage('Nama sekolah dan tanggal mulai wajib diisi');
         return;
     }
-
     submitForm(action, method);
 }
 
@@ -193,13 +234,12 @@ function submitForm(action, method) {
     form.innerHTML = `
         <input type="hidden" name="_token" value="${document.getElementById('csrf').value}">
         ${method !== 'POST' ? `<input type="hidden" name="_method" value="${method}">` : ''}
-        <input type="hidden" name="nama_sekolah" value="${document.getElementById('nama').value}">
-        <input type="hidden" name="alamat" value="${document.getElementById('alamat').value}">
-        <input type="hidden" name="kontak" value="${document.getElementById('kontak').value}">
-        <input type="hidden" name="tgl_mulai_kerjasama" value="${document.getElementById('mulai').value}">
-        <input type="hidden" name="tgl_akhir_kerjasama" value="${document.getElementById('akhir').value}">
+        <input type="hidden" name="nama_sekolah" value="${nama.value}">
+        <input type="hidden" name="alamat" value="${alamat.value}">
+        <input type="hidden" name="kontak" value="${kontak.value}">
+        <input type="hidden" name="tgl_mulai_kerjasama" value="${mulai.value}">
+        <input type="hidden" name="tgl_akhir_kerjasama" value="${akhir.value}">
     `;
-
     document.body.appendChild(form);
     form.submit();
 }
@@ -208,14 +248,12 @@ function confirmDelete(e) {
     e.preventDefault();
     Swal.fire({
         title: 'Hapus Sekolah?',
-        text: 'Sekolah akan dihapus permanen',
+        text: 'Data akan dihapus permanen',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Ya, hapus'
     }).then(res => {
-        if (res.isConfirmed) {
-            e.target.submit();
-        }
+        if (res.isConfirmed) e.target.submit();
     });
 }
 </script>

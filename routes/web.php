@@ -11,6 +11,7 @@ use App\Http\Controllers\SekolahController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndikatorKompetensiController;
 use App\Http\Controllers\KompetensiController;
+use App\Http\Controllers\MateriModulController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RaporController;
 use App\Models\Rapor;
@@ -19,9 +20,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth'])
-    ->name('dashboard');
+Route::middleware('auth')->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -35,17 +34,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/sekolah/{sekolah}/peserta', [PesertaController::class, 'bySekolah'])
     ->name('peserta.bySekolah');
 
-    Route::get(
-            '/rapor/manajemen',
-            [RaporController::class, 'manajemen']
-        )->name('rapor.manajemen');
+    Route::get('/rapor/manajemen',[RaporController::class, 'manajemen'])->name('rapor.manajemen');
 
-        Route::resource('rapor', RaporController::class)->except(['index']);
+    Route::resource('rapor', RaporController::class)->except(['index']);
 
-        Route::resource(
-            'kompetensi.indikator',
-            IndikatorKompetensiController::class
-        );
+    Route::resource('kompetensi.indikator',IndikatorKompetensiController::class);
+
+    Route::get('/rapor/{rapor}/cetak', [RaporController::class, 'cetak'])->name('rapor.cetak');
+
 });
 
 Route::middleware(['auth','role:admin'])->group(function () {
@@ -120,6 +116,9 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
+// Route::get('/materi/modul/{modul}/download',[MateriModulController::class, 'download'])->name('materi.modul.download')->middleware('auth');
+// Route::get('/materi/{materi}/modul', [MateriModulController::class, 'index'])->name('materi.modul.index');
+
 
 Route::get('/rekap-absensi/filter', [AbsensiController::class, 'rekapFilter'])
     ->name('absensi.rekap.filter');
@@ -153,6 +152,35 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/pembayaran/invoice/pdf', [PembayaranController::class, 'invoicePdf'])
         ->name('pembayaran.invoice.pdf');
+});
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('/materi/{materi}/modul', 
+        [MateriModulController::class, 'index']
+    )->name('materi.modul.index');
+
+    Route::post('/materi/{materi}/modul', 
+        [MateriModulController::class, 'store']
+    )->name('materi.modul.store');
+
+    Route::put('/materi/modul/{modul}', 
+        [MateriModulController::class, 'update']
+    )->name('materi.modul.update');
+
+    Route::delete('/materi/modul/{modul}', 
+        [MateriModulController::class, 'destroy']
+    )->name('materi.modul.destroy');
+
+    Route::get('/materi/modul/{modul}/download', 
+        [MateriModulController::class, 'download']
+    )->name('materi.modul.download');
+
+    Route::get('/materi/modul/{modul}/preview',
+        [MateriModulController::class, 'preview']
+    )->name('materi.modul.preview')
+    ->middleware('auth');
+
 });
 
 

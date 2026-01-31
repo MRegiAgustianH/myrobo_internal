@@ -24,4 +24,9 @@ class Peserta extends Model
         return $this->hasMany(Absensi::class);
     }
 
+    public function rapors()
+    {
+        return $this->hasMany(Rapor::class, 'peserta_id');
+    }
+
 }

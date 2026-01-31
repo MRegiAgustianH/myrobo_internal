@@ -16,4 +16,9 @@ class Materi extends Model
     {
         return $this->belongsToMany(Jadwal::class, 'jadwal_materi');
     }
+
+    public function moduls()
+    {
+        return $this->hasMany(MateriModul::class)->orderBy('urutan');
+    }
 }

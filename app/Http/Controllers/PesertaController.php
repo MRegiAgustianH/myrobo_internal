@@ -69,10 +69,13 @@ class PesertaController extends Controller
      */
     public function destroy(Peserta $peserta)
     {
+        $peserta->rapors()->delete();
         $peserta->delete();
 
-        return back()->with('success', 'Peserta berhasil dihapus');
+        return back()->with('success', 'Peserta dan rapor dihapus');
     }
+
+
 
     /**
      * IMPORT PESERTA

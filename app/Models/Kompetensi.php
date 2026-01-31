@@ -13,7 +13,6 @@ class Kompetensi extends Model
         return $this->hasMany(IndikatorKompetensi::class);
     }
 
-    
 }
 
 

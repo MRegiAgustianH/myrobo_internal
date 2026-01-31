@@ -6,29 +6,52 @@ Tambah Indikator – {{ $kompetensi->nama_kompetensi }}
 
 @section('content')
 
-<div class="bg-white p-6 rounded shadow md:w-1/2">
+<div class="max-w-2xl mx-auto">
 
-<form method="POST"
-      action="{{ route('kompetensi.indikator.store', $kompetensi->id) }}">
-    @csrf
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow">
 
-    <label class="block text-sm font-medium mb-1">Nama Indikator</label>
-    <input type="text"
-           name="nama_indikator"
-           class="w-full border rounded px-3 py-2 text-sm"
-           required>
+        <form method="POST"
+              action="{{ route('kompetensi.indikator.store', $kompetensi->id) }}">
+            @csrf
 
-    <div class="mt-4 flex justify-end">
-        <a href="{{ route('kompetensi.indikator.index', $kompetensi->id) }}"
-           class="px-4 py-2 mr-2 text-sm">
-            Batal
-        </a>
+            {{-- INPUT --}}
+            <div class="mb-5">
+                <label
+                    for="nama_indikator"
+                    class="block text-sm font-medium text-gray-700 mb-1">
+                    Nama Indikator
+                </label>
 
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
-            Simpan
-        </button>
+                <input
+                    type="text"
+                    id="nama_indikator"
+                    name="nama_indikator"
+                    class="w-full border rounded-lg px-4 py-2 text-sm
+                           focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    placeholder="Contoh: Mampu menjelaskan konsep dasar"
+                    required>
+            </div>
+
+            {{-- ACTION --}}
+            <div class="flex justify-end gap-3 pt-4 border-t">
+
+                <a
+                    href="{{ route('kompetensi.indikator.index', $kompetensi->id) }}"
+                    class="px-4 py-2 text-sm text-gray-600 hover:underline">
+                    Batal
+                </a>
+
+                <button
+                    type="submit"
+                    class="bg-blue-600 hover:bg-blue-700
+                           text-white px-5 py-2 rounded-lg text-sm">
+                    Simpan
+                </button>
+
+            </div>
+        </form>
+
     </div>
-</form>
 
 </div>
 

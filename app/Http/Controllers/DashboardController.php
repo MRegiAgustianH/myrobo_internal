@@ -18,7 +18,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         // ======================
-        // ADMIN
+        // ADMIN SISTEM
         // ======================
         if ($user->role === 'admin') {
             return view('dashboard', [
@@ -29,54 +29,62 @@ class DashboardController extends Controller
                 'pembayaranBelum' => Pembayaran::where('status', 'belum')->count(),
                 'pembayaranLunas' => Pembayaran::where('status', 'lunas')->count(),
             ]);
-        }elseif ($user->role === 'admin_sekolah') {
+        }
 
-        $bulan = now()->month;
-        $tahun = now()->year;
+        // ======================
+        // ADMIN SEKOLAH
+        // ======================
+        if ($user->role === 'admin_sekolah') {
 
-        $rekapAbsensi = Absensi::whereHas('jadwal', function ($q) use ($user) {
-                $q->where('sekolah_id', $user->sekolah_id);
-            })
-            ->count();
+            $bulan = now()->month;
+            $tahun = now()->year;
 
-        $totalPembayaran = Pembayaran::where('sekolah_id', $user->sekolah_id)
-            ->where('bulan', $bulan)
-            ->where('tahun', $tahun)
-            ->sum('jumlah');
+            $rekapAbsensi = Absensi::whereHas('jadwal', function ($q) use ($user) {
+                    $q->where('sekolah_id', $user->sekolah_id);
+                })
+                ->count();
 
-        return view('dashboard-admin-sekolah', compact(
-            'rekapAbsensi',
-            'totalPembayaran',
-            'bulan',
-            'tahun'
-        ));
-    }
+            $totalPembayaran = Pembayaran::where('sekolah_id', $user->sekolah_id)
+                ->where('bulan', $bulan)
+                ->where('tahun', $tahun)
+                ->sum('jumlah');
+
+            return view('dashboard-admin-sekolah', compact(
+                'rekapAbsensi',
+                'totalPembayaran',
+                'bulan',
+                'tahun'
+            ));
+        }
 
         // ======================
         // INSTRUKTUR
         // ======================
-        $jadwalsHariIni = $user->jadwals()
-            ->whereDate('tanggal_mulai', Carbon::today())
-            ->with('sekolah')
-            ->get();
+        if ($user->role === 'instruktur') {
 
-        $jadwalsMingguan = $user->jadwals()
-            ->whereBetween('tanggal_mulai', [
-                Carbon::today(),
-                Carbon::today()->addDays(7)
-            ])
-            ->with('sekolah')
-            ->orderBy('tanggal_mulai')
-            ->get();
+            $jadwalsHariIni = $user->jadwals()
+                ->whereDate('tanggal_mulai', Carbon::today())
+                ->with('sekolah')
+                ->get();
 
-        return view('dashboard-instruktur', compact(
-            'jadwalsHariIni',
-            'jadwalsMingguan'
-        ));
+            $jadwalsMingguan = $user->jadwals()
+                ->whereBetween('tanggal_mulai', [
+                    Carbon::today(),
+                    Carbon::today()->addDays(7)
+                ])
+                ->with('sekolah')
+                ->orderBy('tanggal_mulai')
+                ->get();
 
-        
+            return view('dashboard-instruktur', compact(
+                'jadwalsHariIni',
+                'jadwalsMingguan'
+            ));
+        }
 
-    abort(403);
+        // ======================
+        // ROLE TIDAK VALID
+        // ======================
+        abort(403);
     }
-    
 }
