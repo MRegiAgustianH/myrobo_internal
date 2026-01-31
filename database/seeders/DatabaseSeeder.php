@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
             SekolahSeeder::class,
             UserSeeder::class,
             MateriSeeder::class,
+            SemesterSeeder::class,
+            KompetensiSeeder::class,
+            IndikatorKompetensiSeeder::class,
         ]);
     }
 }

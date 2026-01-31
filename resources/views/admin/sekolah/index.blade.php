@@ -61,11 +61,10 @@ Manajemen Sekolah
 
                     <td class="px-4 py-3 text-center whitespace-nowrap">
                         <div class="inline-flex gap-1">
-                            <a href="{{ route('peserta.bySekolah',$s->id) }}"
+                            <a href="{{ route('sekolah.peserta.index',$s->id) }}"
                                class="bg-green-100 text-green-700 px-3 py-1 rounded text-xs">
                                Peserta
                             </a>
-
                             <button
                                 onclick='openEditModal(@json($s))'
                                 class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
@@ -89,8 +88,6 @@ Manajemen Sekolah
 
     </div>
 </div>
-
-
 
 {{-- SWEETALERT --}}
 <script>

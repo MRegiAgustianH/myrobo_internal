@@ -12,6 +12,7 @@ class Sekolah extends Model
     protected $fillable = [
         'nama_sekolah',
         'alamat',
+        // 'logo,',
         'kontak',
         'tgl_mulai_kerjasama',
         'tgl_akhir_kerjasama',
@@ -30,6 +31,11 @@ class Sekolah extends Model
     public function jadwals()
     {
         return $this->hasMany(Jadwal::class);
+    }
+
+    public function rapors()
+    {
+        return $this->hasMany(Rapor::class);
     }
 
 }

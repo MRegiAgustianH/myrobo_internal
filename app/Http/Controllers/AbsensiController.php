@@ -40,6 +40,7 @@ class AbsensiController extends Controller
 
     public function store(Request $request, Jadwal $jadwal)
     {
+        // dd($request->all());
         $tanggalAbsensi = $jadwal->tanggal_mulai;
 
         foreach ($request->absensi ?? [] as $pesertaId => $data) {

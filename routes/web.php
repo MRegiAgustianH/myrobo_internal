@@ -9,8 +9,11 @@ use App\Http\Controllers\PesertaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SekolahController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IndikatorKompetensiController;
+use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\PembayaranController;
-
+use App\Http\Controllers\RaporController;
+use App\Models\Rapor;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -32,37 +35,50 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/sekolah/{sekolah}/peserta', [PesertaController::class, 'bySekolah'])
     ->name('peserta.bySekolah');
 
-    Route::resource('rapot', RapotController::class);
+    Route::get(
+            '/rapor/manajemen',
+            [RaporController::class, 'manajemen']
+        )->name('rapor.manajemen');
+
+        Route::resource('rapor', RaporController::class)->except(['index']);
+
+        Route::resource(
+            'kompetensi.indikator',
+            IndikatorKompetensiController::class
+        );
 });
 
 Route::middleware(['auth','role:admin'])->group(function () {
 
-    Route::get('/sekolah/{sekolah}/peserta',
-        [PesertaController::class,'bySekolah'])
-        ->name('peserta.bySekolah');
+   Route::get('/sekolah/{sekolah}/peserta',
+            [PesertaController::class, 'index'])
+            ->name('sekolah.peserta.index');
 
-    Route::post('/peserta',
-        [PesertaController::class,'store'])
-        ->name('peserta.store');
+        Route::post('/sekolah/{sekolah}/peserta',
+            [PesertaController::class, 'store'])
+            ->name('sekolah.peserta.store');
 
-    Route::put('/peserta/{peserta}',
-        [PesertaController::class,'update'])
-        ->name('peserta.update');
+        Route::patch('/peserta/{peserta}',
+            [PesertaController::class, 'update'])
+            ->name('peserta.update');
 
-    Route::delete('/peserta/{peserta}',
-        [PesertaController::class,'destroy'])
-        ->name('peserta.destroy');
+        Route::delete('/peserta/{peserta}',
+            [PesertaController::class, 'destroy'])
+            ->name('peserta.destroy');
 
-    Route::post(
-        '/sekolah/{sekolah}/peserta/import',
-        [PesertaController::class, 'import']
-    )->name('peserta.import');
+        Route::post('/sekolah/{sekolah}/peserta/import',
+            [PesertaController::class, 'import'])
+            ->name('sekolah.peserta.import');
 
-    Route::get(
-        '/peserta/template/download',
-        [PesertaController::class, 'downloadTemplate']
-    )->name('peserta.template.download');
-    
+        Route::get('/peserta/template/download',
+            [PesertaController::class, 'downloadTemplate'])
+            ->name('peserta.template.download');
+
+        Route::post(
+            '/sekolah/{sekolah}/peserta/import',
+            [PesertaController::class, 'import']
+        )->name('peserta.import');
+
 });
 
 
@@ -70,12 +86,11 @@ Route::middleware(['auth','role:admin'])->group(function () {
 Route::middleware(['auth','role:admin'])->group(function () {
 
     Route::resource('users', UserController::class);
-
-});
-
-Route::middleware(['auth','role:admin'])->group(function () {
     Route::resource('materi', MateriController::class)->except(['show']);
+    Route::resource('kompetensi', KompetensiController::class);
+
 });
+
 
 Route::middleware(['auth'])->group(function () {
 

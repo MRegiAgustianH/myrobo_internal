@@ -106,6 +106,15 @@
         <div>
             <p class="text-xs uppercase tracking-wide text-gray-700 mb-2">Laporan</p>
 
+            <a href="{{ route('rapor.manajemen') }}"
+            class="flex items-center gap-3 px-4 py-2.5 mt-1 rounded-xl
+            {{ request()->routeIs('rapor.manajemen')
+                    ? 'bg-white text-gray-900 font-semibold shadow-sm'
+                    : 'hover:bg-white/80' }}">
+                <i data-feather="bar-chart-2" class="w-4 h-4"></i>
+                Rapor
+            </a>
+
             <a href="{{ route('absensi.rekap.filter') }}"
             class="flex items-center gap-3 px-4 py-2.5 rounded-xl
             {{ request()->routeIs('absensi.rekap.*')
@@ -124,15 +133,8 @@
                 Rekap Pembayaran
             </a>
 
-            <a href="{{ route('rapot.index') }}"
-            class="flex items-center gap-3 px-4 py-2.5 mt-1 rounded-xl
-            {{ request()->routeIs('rapot.index')
-                    ? 'bg-white text-gray-900 font-semibold shadow-sm'
-                    : 'hover:bg-white/80' }}">
-                <i data-feather="bar-chart-2" class="w-4 h-4"></i>
-                Rapot
-            </a>
             
+
         </div>
 
         @endif
