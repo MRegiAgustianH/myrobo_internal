@@ -138,6 +138,12 @@
             <i data-feather="calendar" class="w-4 h-4"></i>
             Jadwal Saya
         </a>
+
+        <a href="#"
+        class="{{ $menuClass }} {{ request()->routeIs('#') ? $active : $hover }}">
+            <i data-feather="book-open" class="w-4 h-4"></i>
+            Modul Materi
+        </a>
     </div>
 
     @endif
