@@ -78,13 +78,13 @@ Pengeluaran
                     data-kategori="{{ $p->kategori }}"
                     data-deskripsi="{{ $p->deskripsi }}"
                     data-jumlah="{{ $p->jumlah }}"
-                    class="text-blue-600 font-medium">
+                    class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
                     Edit
                 </button>
 
                 <button
                     onclick="openDeleteModal('{{ $p->id }}')"
-                    class="text-red-600 font-medium ml-3">
+                    class="bg-red-100 text-red-700 px-3 py-1 rounded text-xs">
                     Hapus
                 </button>
             </td>
