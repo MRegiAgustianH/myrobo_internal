@@ -438,25 +438,43 @@ function submitFormAjax(action, method) {
     })
     .catch(error => {
 
+        let title = 'Gagal Menyimpan Jadwal';
         let message = 'Terjadi kesalahan saat menyimpan jadwal';
 
         if (error?.errors) {
-            message = Object.values(error.errors).flat().join('\n');
+
+            // 🔴 KHUSUS BATAS MATERI
+            if (error.errors.materis) {
+                title = 'Batas Materi';
+                message = error.errors.materis.join('\n');
+            }
+
+            // 🔴 KHUSUS BENTROK INSTRUKTUR
+            else if (error.errors.instrukturs) {
+                title = 'Jadwal Bentrok';
+                message = error.errors.instrukturs.join('\n');
+            }
+
+            // 🔴 ERROR LAIN
+            else {
+                message = Object.values(error.errors).flat().join('\n');
+            }
         }
 
-        // ⛔ TUTUP MODAL FORM
+        // TUTUP MODAL FORM
         Swal.close();
 
-        // ✅ MODAL ERROR BARU
+        // MODAL ERROR
         Swal.fire({
             icon: 'error',
-            title: 'Jadwal Bentrok',
+            title: title,
             text: message,
             confirmButtonText: 'Mengerti'
         });
 
         return Promise.reject();
     });
+
 }
 
 

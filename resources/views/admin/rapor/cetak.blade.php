@@ -216,7 +216,7 @@
                         </tr>
                         <tr>
                             <td class="nilai-huruf">
-                                {{ $rapor->nilai_huruf ?? 'A' }}
+                                {{ $rapor->nilai_akhir ?? 'A' }}
                             </td>
                         </tr>
                     </table>

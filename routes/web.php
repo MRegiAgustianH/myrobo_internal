@@ -42,6 +42,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/rapor/{rapor}/cetak', [RaporController::class, 'cetak'])->name('rapor.cetak');
 
+    Route::get('/rapor/peserta/{sekolah}',[RaporController::class, 'pesertaBySekolah'])->name('rapor.peserta.bySekolah');
+
 });
 
 Route::middleware(['auth','role:admin'])->group(function () {

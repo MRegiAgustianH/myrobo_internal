@@ -33,10 +33,19 @@ class RaporController extends Controller
     {
         return view('admin.rapor.create', [
             'sekolahs'     => Sekolah::orderBy('nama_sekolah')->get(),
-            'pesertas'    => Peserta::orderBy('nama')->get(),
+            'pesertas'    => [],
             'semesters'   => Semester::orderBy('nama_semester')->get(),
             'kompetensis' => Kompetensi::with('indikatorKompetensis')->get(),
         ]);
+    }
+
+    public function pesertaBySekolah(Sekolah $sekolah)
+    {
+        return response()->json(
+            Peserta::where('sekolah_id', $sekolah->id)
+                ->orderBy('nama')
+                ->get(['id','nama'])
+        );
     }
 
     /* =========================

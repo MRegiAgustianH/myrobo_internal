@@ -75,68 +75,75 @@ class JadwalController extends Controller
    public function store(Request $request)
 {
     $request->validate([
-        'sekolah_id' => 'required',
-        'nama_kegiatan' => 'required',
-        'tanggal_mulai' => 'required|date',
-        'tanggal_selesai' => 'required|date',
-        'jam_mulai' => 'required',
-        'jam_selesai' => 'required',
-        'instrukturs' => 'required|array|min:1',
+        'sekolah_id'       => 'required',
+        'nama_kegiatan'    => 'required',
+        'tanggal_mulai'    => 'required|date',
+        'tanggal_selesai'  => 'required|date',
+        'jam_mulai'        => 'required',
+        'jam_selesai'      => 'required',
+        'instrukturs'      => 'required|array|min:1',
+        'materis'          => 'nullable|array|max:2', // 🔴 BATAS 2
+        'materis.*'        => 'exists:materis,id',
     ]);
+
+    // ===============================
+    // VALIDASI JUMLAH MATERI
+    // ===============================
+    if ($request->filled('materis') && count($request->materis) > 2) {
+        throw ValidationException::withMessages([
+            'materis' => 'Jadwal sudah memiliki 2 materi'
+        ]);
+    }
 
     // ===============================
     // CEK BENTROK JADWAL INSTRUKTUR
     // ===============================
     foreach ($request->instrukturs as $instrukturId) {
+        $bentrok = Jadwal::whereHas('instrukturs', function ($q) use ($instrukturId) {
+                $q->where('users.id', $instrukturId);
+            })
+            ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
+            ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
+            ->where(function ($q) use ($request) {
+                $q->where('jam_mulai', '<', $request->jam_selesai)
+                  ->where('jam_selesai', '>', $request->jam_mulai);
+            })
+            ->exists();
 
-    $bentrok = \App\Models\Jadwal::whereHas('instrukturs', function ($q) use ($instrukturId) {
-            $q->where('users.id', $instrukturId);
-        })
-        ->whereDate('tanggal_mulai', '<=', $request->tanggal_selesai)
-        ->whereDate('tanggal_selesai', '>=', $request->tanggal_mulai)
-        ->where(function ($q) use ($request) {
-            $q->where('jam_mulai', '<', $request->jam_selesai)
-              ->where('jam_selesai', '>', $request->jam_mulai);
-        })
-        ->exists();
-
-    if ($bentrok) {
-        throw ValidationException::withMessages([
-            'instrukturs' => 'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
-        ]);
+        if ($bentrok) {
+            throw ValidationException::withMessages([
+                'instrukturs' =>
+                    'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
+            ]);
+        }
     }
-}
 
     // ===============================
     // SIMPAN JADWAL
     // ===============================
     $jadwal = Jadwal::create([
-        'sekolah_id' => $request->sekolah_id,
-        'nama_kegiatan' => $request->nama_kegiatan,
-        'tanggal_mulai' => $request->tanggal_mulai,
+        'sekolah_id'      => $request->sekolah_id,
+        'nama_kegiatan'   => $request->nama_kegiatan,
+        'tanggal_mulai'   => $request->tanggal_mulai,
         'tanggal_selesai' => $request->tanggal_selesai,
-        'jam_mulai' => $request->jam_mulai,
-        'jam_selesai' => $request->jam_selesai,
-        'status' => $request->status ?? 'aktif',
+        'jam_mulai'       => $request->jam_mulai,
+        'jam_selesai'     => $request->jam_selesai,
+        'status'          => $request->status ?? 'aktif',
     ]);
 
     $jadwal->instrukturs()->sync($request->instrukturs);
     $jadwal->materis()->sync($request->materis ?? []);
 
-
     return redirect()
         ->route('jadwal.index')
         ->with('success', 'Jadwal berhasil ditambahkan');
-        
 }
+
 
 
 
     public function update(Request $request, Jadwal $jadwal)
 {
-    // ===============================
-    // VALIDASI
-    // ===============================
     $request->validate([
         'sekolah_id'       => 'required|exists:sekolahs,id',
         'nama_kegiatan'    => 'required|string',
@@ -146,10 +153,19 @@ class JadwalController extends Controller
         'jam_selesai'      => 'required|after:jam_mulai',
         'instrukturs'      => 'required|array|min:1',
         'instrukturs.*'    => 'exists:users,id',
-        'materis'          => 'nullable|array',
+        'materis'          => 'nullable|array|max:2', // 🔴 BATAS 2
         'materis.*'        => 'exists:materis,id',
         'status'           => 'nullable|in:aktif,nonaktif',
     ]);
+
+    // ===============================
+    // VALIDASI JUMLAH MATERI
+    // ===============================
+    if ($request->filled('materis') && count($request->materis) > 2) {
+        throw ValidationException::withMessages([
+            'materis' => 'Jadwal sudah memiliki 2 materi'
+        ]);
+    }
 
     // ===============================
     // CEK BENTROK (KECUALI JADWAL INI)
@@ -170,15 +186,14 @@ class JadwalController extends Controller
 
         if ($bentrok) {
             throw ValidationException::withMessages([
-                'instrukturs' => [
+                'instrukturs' =>
                     'Jadwal bentrok: instruktur sudah memiliki jadwal di waktu tersebut.'
-                ]
             ]);
         }
     }
 
     // ===============================
-    // UPDATE DATA JADWAL
+    // UPDATE JADWAL
     // ===============================
     $jadwal->update([
         'sekolah_id'      => $request->sekolah_id,
@@ -190,15 +205,9 @@ class JadwalController extends Controller
         'status'          => $request->status ?? 'aktif',
     ]);
 
-    // ===============================
-    // SINKRON RELASI
-    // ===============================
     $jadwal->instrukturs()->sync($request->instrukturs);
     $jadwal->materis()->sync($request->materis ?? []);
 
-    // ===============================
-    // RESPONSE (AJAX FRIENDLY)
-    // ===============================
     return response()->json([
         'message' => 'Jadwal berhasil diperbarui'
     ]);

@@ -15,14 +15,15 @@
         {{-- Sekolah --}}
         <div>
             <label class="block text-sm font-medium mb-1">Sekolah</label>
-            <select name="sekolah_id"
-                    class="w-full border rounded-lg px-4 py-2 text-sm"
-                    required>
+            <select id="sekolah_id" name="sekolah_id"
+                class="w-full border rounded px-3 py-2"
+                onchange="loadPeserta(this.value)"
+                required>
                 <option value="">-- Pilih Sekolah --</option>
-                @foreach($sekolahs as $sekolah)
-                    <option value="{{ $sekolah->id }}"
-                        @selected(old('sekolah_id', $rapor->sekolah_id ?? '') == $sekolah->id)>
-                        {{ $sekolah->nama_sekolah }}
+                @foreach($sekolahs as $s)
+                    <option value="{{ $s->id }}"
+                        @selected(old('sekolah_id', $rapor->sekolah_id ?? '') == $s->id)>
+                        {{ $s->nama_sekolah }}
                     </option>
                 @endforeach
             </select>
@@ -31,16 +32,20 @@
         {{-- Peserta --}}
         <div>
             <label class="block text-sm font-medium mb-1">Peserta</label>
-            <select name="peserta_id"
-                    class="w-full border rounded-lg px-4 py-2 text-sm"
-                    required>
+            <select id="peserta_id" name="peserta_id"
+                class="w-full border rounded px-3 py-2"
+                required>
                 <option value="">-- Pilih Peserta --</option>
-                @foreach($pesertas as $peserta)
-                    <option value="{{ $peserta->id }}"
-                        @selected(old('peserta_id', $rapor->peserta_id ?? '') == $peserta->id)>
-                        {{ $peserta->nama }}
-                    </option>
-                @endforeach
+
+                {{-- PRELOAD SAAT EDIT --}}
+                @if(!empty($pesertas))
+                    @foreach($pesertas as $p)
+                        <option value="{{ $p->id }}"
+                            @selected(old('peserta_id', $rapor->peserta_id ?? '') == $p->id)>
+                            {{ $p->nama }}
+                        </option>
+                    @endforeach
+                @endif
             </select>
         </div>
 
@@ -197,3 +202,28 @@ function pilihSemuaGlobal(nilai) {
     });
 }
 </script>
+<script>
+function loadPeserta(sekolahId) {
+    const pesertaSelect = document.getElementById('peserta_id');
+    pesertaSelect.innerHTML = '<option>Loading...</option>';
+
+    if (!sekolahId) {
+        pesertaSelect.innerHTML = '<option value="">-- Pilih Peserta --</option>';
+        return;
+    }
+
+    fetch(`/rapor/peserta/${sekolahId}`)
+        .then(res => res.json())
+        .then(data => {
+            let options = '<option value="">-- Pilih Peserta --</option>';
+            data.forEach(p => {
+                options += `<option value="${p.id}">${p.nama}</option>`;
+            });
+            pesertaSelect.innerHTML = options;
+        })
+        .catch(() => {
+            pesertaSelect.innerHTML = '<option>Error memuat peserta</option>';
+        });
+}
+</script>
+
