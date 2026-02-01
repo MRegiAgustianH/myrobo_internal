@@ -82,7 +82,6 @@ Pembayaran Bulanan
     <th class="px-3 py-2 text-left">No</th>
     <th class="px-3 py-2 text-left">Peserta</th>
     <th class="px-3 py-2 text-center">Lunas</th>
-    <th class="px-3 py-2 text-right">Jumlah</th>
     <th class="px-3 py-2 text-center">Tanggal Bayar</th>
 </tr>
 </thead>
@@ -110,19 +109,16 @@ $pembayaran = $pembayaranMap[$p->id] ?? null;
             class="rounded border-gray-300 text-[#8FBFC2] focus:ring-[#8FBFC2]"
             name="pembayaran[{{ $p->id }}][status]"
             value="lunas"
+            data-peserta="{{ $p->id }}"
             {{ $pembayaran?->status === 'lunas' ? 'checked' : '' }}>
     </td>
 
-    {{-- JUMLAH --}}
-    <td class="px-3 py-2">
-        <input type="number"
-            name="pembayaran[{{ $p->id }}][jumlah]"
-            value="{{ $pembayaran->jumlah ?? '' }}"
-            class="w-full bg-white border border-[#E3EEF0]
-                   rounded-lg px-2 py-1 text-sm
-                   focus:ring-2 focus:ring-[#8FBFC2]/60 focus:border-[#8FBFC2]"
-            placeholder="0">
-    </td>
+    {{-- JUMLAH (HIDDEN, OTOMATIS) --}}
+    <input type="hidden"
+        id="jumlah-{{ $p->id }}"
+        name="pembayaran[{{ $p->id }}][jumlah]"
+        value="{{ $pembayaran?->status === 'lunas' ? 150000 : '' }}">
+
 
     {{-- TANGGAL --}}
     <td class="px-3 py-2">
@@ -159,5 +155,35 @@ $pembayaran = $pembayaranMap[$p->id] ?? null;
 </div>
 
 </form>
+
+@push('scripts')
+<script>
+document.querySelectorAll('input[type="checkbox"][data-peserta]').forEach(cb => {
+    cb.addEventListener('change', function () {
+        const id = this.dataset.peserta;
+        const jumlahInput = document.getElementById('jumlah-' + id);
+        const tanggalInput = document.querySelector(
+            `input[name="pembayaran[${id}][tanggal_bayar]"]`
+        );
+
+        if (this.checked) {
+            jumlahInput.value = 150000;
+            tanggalInput.removeAttribute('disabled');
+
+            // otomatis isi tanggal hari ini jika kosong
+            if (!tanggalInput.value) {
+                const today = new Date().toISOString().slice(0, 10);
+                tanggalInput.value = today;
+            }
+        } else {
+            jumlahInput.value = '';
+            tanggalInput.value = '';
+            tanggalInput.setAttribute('disabled', true);
+        }
+    });
+});
+</script>
+@endpush
+
 
 @endsection

@@ -14,8 +14,9 @@ Manajemen Sekolah
 
     <button
         onclick="openCreateModal()"
-        class="bg-[#8FBFC2] hover:bg-[#7aaeb2] text-white px-4 py-2 rounded-lg text-sm shadow">
-        + Tambah Sekolah
+        class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition">
+        <i data-feather="plus" class="w-4 h-4"></i>
+        Tambah Sekolah
     </button>
 </div>
 

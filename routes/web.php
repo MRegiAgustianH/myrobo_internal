@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SekolahController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndikatorKompetensiController;
+use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\MateriModulController;
 use App\Http\Controllers\PembayaranController;
@@ -76,6 +77,10 @@ Route::middleware(['auth','role:admin'])->group(function () {
             '/sekolah/{sekolah}/peserta/import',
             [PesertaController::class, 'import']
         )->name('peserta.import');
+
+        Route::resource('keuangan', KeuanganController::class)->except(['show']);
+        Route::get('keuangan/gaji-instruktur', [KeuanganController::class, 'gajiInstruktur'])->name('keuangan.gaji.instruktur');
+        Route::post('keuangan/gaji-instruktur/bayar', [KeuanganController::class, 'bayarGajiInstruktur'])->name('keuangan.gaji.bayar');
 
 });
 

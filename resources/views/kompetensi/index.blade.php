@@ -27,8 +27,9 @@ Manajemen Kompetensi
     </a>
 
     <a href="{{ route('kompetensi.create') }}"
-       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-        + Tambah Kompetensi
+       class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+        <i data-feather="plus" class="w-4 h-4"></i>
+        Tambah Kompetensi
     </a>
 </div>
 

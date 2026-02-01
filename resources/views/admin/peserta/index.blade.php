@@ -27,8 +27,9 @@ Peserta – {{ $sekolah->nama_sekolah }}
 
         <button
             onclick="openCreateModal()"
-            class="bg-[#8FBFC2] hover:bg-[#7aaeb2] text-white px-4 py-2 rounded-lg text-sm">
-            + Tambah Peserta
+            class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+            <i data-feather="plus" class="w-4 h-4"></i>
+            Tambah Peserta
         </button>
     </div>
 </div>

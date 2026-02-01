@@ -23,14 +23,69 @@ class UserSeeder extends Seeder
 
         // INSTRUKTUR
         User::updateOrCreate(
-            ['email' => 'instruktur@myrobo.id'],
+            ['email' => 'aling@myrobo.id'],
             [
-                'username' => 'instruktur',
-                'name'     => 'Instruktur MyRobo',
-                'password' => Hash::make('instruktur123'),
+                'username' => 'aling',
+                'name'     => 'Aling',
+                'password' => Hash::make('aling123'),
                 'role'     => 'instruktur',
             ]
         );
+        User::updateOrCreate(
+            ['email' => 'bagus@myrobo.id'],
+            [
+                'username' => 'bagus',
+                'name'     => 'Bagus',
+                'password' => Hash::make('bagus123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'gina@myrobo.id'],
+            [
+                'username' => 'gina',
+                'name'     => 'Gina',
+                'password' => Hash::make('gina123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'abiyyatun@myrobo.id'],
+            [
+                'username' => 'abiyyatun',
+                'name'     => 'Abiyyatun',
+                'password' => Hash::make('abiyyatun123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'rizki@myrobo.id'],
+            [
+                'username' => 'rizki',
+                'name'     => 'Rizki',
+                'password' => Hash::make('rizki123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'devina@myrobo.id'],
+            [
+                'username' => 'devina',
+                'name'     => 'Devina',
+                'password' => Hash::make('devina123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        User::updateOrCreate(
+            ['email' => 'nabila@myrobo.id'],
+            [
+                'username' => 'nabila',
+                'name'     => 'Nabila',
+                'password' => Hash::make('nabila123'),
+                'role'     => 'instruktur',
+            ]
+        );
+        
         
 
         // ADMIN SEKOLAH

@@ -153,7 +153,7 @@ class JadwalController extends Controller
         'jam_selesai'      => 'required|after:jam_mulai',
         'instrukturs'      => 'required|array|min:1',
         'instrukturs.*'    => 'exists:users,id',
-        'materis'          => 'nullable|array|max:2', // 🔴 BATAS 2
+        'materis'          => 'nullable|array|max:2', 
         'materis.*'        => 'exists:materis,id',
         'status'           => 'nullable|in:aktif,nonaktif',
     ]);

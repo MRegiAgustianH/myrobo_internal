@@ -20,8 +20,9 @@ Modul Materi – {{ $materi->nama_materi }}
 
     @if(in_array(auth()->user()->role, ['admin','instruktur']))
     <button onclick="openCreateModal()"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
-        + Tambah Modul
+        class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+        <i data-feather="plus" class="w-4 h-4"></i>
+        Tambah Modul
     </button>
     @endif
 </div>

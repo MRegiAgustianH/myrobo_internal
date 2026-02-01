@@ -6,6 +6,7 @@ Dashboard Admin
 
 @section('content')
 
+
 {{-- ================= SUMMARY CARDS ================= --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5 mb-8">
 
@@ -39,6 +40,8 @@ Dashboard Admin
         </div>
     </div>
 
+    
+
     {{-- INSTRUKTUR --}}
     <div class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
         <div class="flex items-center justify-between">
@@ -69,7 +72,7 @@ Dashboard Admin
         </div>
     </div>
 
-    {{-- PEMBAYARAN BELUM --}}
+    {{-- BELUM LUNAS --}}
     <div class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
         <div class="flex items-center justify-between">
             <div>
@@ -84,7 +87,7 @@ Dashboard Admin
         </div>
     </div>
 
-    {{-- PEMBAYARAN LUNAS --}}
+    {{-- LUNAS --}}
     <div class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
         <div class="flex items-center justify-between">
             <div>
@@ -97,6 +100,41 @@ Dashboard Admin
                 <i data-feather="check-circle" class="w-6 h-6 text-emerald-600"></i>
             </div>
         </div>
+    </div>
+
+</div>
+
+{{-- ================= RINGKASAN KEUANGAN ================= --}}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+    {{-- UANG MASUK --}}
+    <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <p class="text-xs text-gray-500 uppercase mb-1">
+            Uang Masuk ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+        </p>
+        <p class="text-3xl font-bold text-emerald-600">
+            Rp {{ number_format($uangMasuk, 0, ',', '.') }}
+        </p>
+    </div>
+
+    {{-- UANG KELUAR --}}
+    <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <p class="text-xs text-gray-500 uppercase mb-1">
+            Uang Keluar ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+        </p>
+        <p class="text-3xl font-bold text-red-600">
+            Rp {{ number_format($uangKeluar, 0, ',', '.') }}
+        </p>
+    </div>
+
+    {{-- SALDO --}}
+    <div class="bg-white rounded-xl p-6 shadow-sm border">
+        <p class="text-xs text-gray-500 uppercase mb-1">
+            Saldo Bersih
+        </p>
+        <p class="text-3xl font-bold {{ $saldo >= 0 ? 'text-blue-600' : 'text-red-600' }}">
+            Rp {{ number_format($saldo, 0, ',', '.') }}
+        </p>
     </div>
 
 </div>
@@ -165,6 +203,11 @@ Dashboard Admin
             <a href="{{ route('pembayaran.rekap') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Rekap Pembayaran</span>
+                <i data-feather="chevron-right" class="w-4 h-4"></i>
+            </a>
+            <a href="{{ route('keuangan.index') }}"
+               class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
+                <span>Pengeluaran</span>
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
             </a>
         </div>

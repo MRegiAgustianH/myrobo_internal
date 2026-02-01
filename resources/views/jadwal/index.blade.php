@@ -16,9 +16,9 @@ Kalender Jadwal Pelatihan
 @if(auth()->user()->role === 'admin')
 <div class="flex justify-end mb-4">
     <button onclick="openCreateModal()"
-        class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700
-               text-white px-4 py-2 rounded text-sm">
-        + Tambah Jadwal
+        class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+        <i data-feather="plus" class="w-4 h-4"></i>
+        Tambah Jadwal
     </button>
 </div>
 @endif

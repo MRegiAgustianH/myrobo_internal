@@ -15,8 +15,9 @@ Manajemen Rapor
 
     <div class="flex gap-2">
         <a href="{{ route('rapor.create') }}"
-           class="bg-[#8FBFC2] hover:bg-[#7aaeb2] text-white px-4 py-2 rounded-lg text-sm shadow">
-            + Tambah Rapor
+           class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+            <i data-feather="plus" class="w-4 h-4"></i>
+            Tambah Rapor
         </a>
 
         <a href="{{ route('kompetensi.index') }}"

@@ -9,57 +9,113 @@ use App\Models\Absensi;
 use App\Models\Peserta;
 use App\Models\Sekolah;
 use App\Models\Pembayaran;
+use App\Models\Keuangan;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user  = auth()->user();
+        $bulan = now()->month;
+        $tahun = now()->year;
 
-        // ======================
-        // ADMIN SISTEM
-        // ======================
+        /*
+        |==================================================
+        | ADMIN SISTEM
+        |==================================================
+        */
         if ($user->role === 'admin') {
-            return view('dashboard', [
-                'totalSekolah'    => Sekolah::count(),
-                'totalPeserta'    => Peserta::count(),
-                'totalInstruktur' => User::where('role', 'instruktur')->count(),
-                'totalJadwal'     => Jadwal::count(),
-                'pembayaranBelum' => Pembayaran::where('status', 'belum')->count(),
-                'pembayaranLunas' => Pembayaran::where('status', 'lunas')->count(),
-            ]);
-        }
 
-        // ======================
-        // ADMIN SEKOLAH
-        // ======================
-        if ($user->role === 'admin_sekolah') {
+            // ===== MASTER DATA =====
+            $totalSekolah    = Sekolah::count();
+            $totalPeserta    = Peserta::count();
+            $totalInstruktur = User::where('role', 'instruktur')->count();
+            $totalJadwal     = Jadwal::count();
 
-            $bulan = now()->month;
-            $tahun = now()->year;
+            // ===== PEMBAYARAN =====
+            $pembayaranBelum = Pembayaran::where('status', 'belum')->count();
+            $pembayaranLunas = Pembayaran::where('status', 'lunas')->count();
 
-            $rekapAbsensi = Absensi::whereHas('jadwal', function ($q) use ($user) {
-                    $q->where('sekolah_id', $user->sekolah_id);
-                })
-                ->count();
-
-            $totalPembayaran = Pembayaran::where('sekolah_id', $user->sekolah_id)
-                ->where('bulan', $bulan)
-                ->where('tahun', $tahun)
+            // ===== KEUANGAN BULAN INI =====
+            $uangMasuk = Keuangan::where('tipe', 'masuk')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
                 ->sum('jumlah');
 
-            return view('dashboard-admin-sekolah', compact(
-                'rekapAbsensi',
-                'totalPembayaran',
+            $uangKeluar = Keuangan::where('tipe', 'keluar')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $saldo = $uangMasuk - $uangKeluar;
+
+            return view('dashboard', compact(
+                'totalSekolah',
+                'totalPeserta',
+                'totalInstruktur',
+                'totalJadwal',
+                'pembayaranBelum',
+                'pembayaranLunas',
+                'uangMasuk',
+                'uangKeluar',
+                'saldo',
                 'bulan',
                 'tahun'
             ));
         }
 
-        // ======================
-        // INSTRUKTUR
-        // ======================
+        /*
+        |==================================================
+        | ADMIN SEKOLAH
+        |==================================================
+        */
+        if ($user->role === 'admin_sekolah') {
+
+            // ===== ABSENSI =====
+            $rekapAbsensi = Absensi::whereHas('jadwal', function ($q) use ($user) {
+                    $q->where('sekolah_id', $user->sekolah_id);
+                })
+                ->count();
+
+            // ===== PEMBAYARAN SEKOLAH =====
+            $totalPembayaran = Pembayaran::where('sekolah_id', $user->sekolah_id)
+                ->where('status', 'lunas')
+                ->where('bulan', $bulan)
+                ->where('tahun', $tahun)
+                ->sum('jumlah');
+
+            // ===== KEUANGAN SEKOLAH =====
+            $uangMasuk = Keuangan::where('tipe', 'masuk')
+                ->where('sekolah_id', $user->sekolah_id)
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $uangKeluar = Keuangan::where('tipe', 'keluar')
+                ->where('sekolah_id', $user->sekolah_id)
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $saldo = $uangMasuk - $uangKeluar;
+
+            return view('dashboard-admin-sekolah', compact(
+                'rekapAbsensi',
+                'totalPembayaran',
+                'uangMasuk',
+                'uangKeluar',
+                'saldo',
+                'bulan',
+                'tahun'
+            ));
+        }
+
+        /*
+        |==================================================
+        | INSTRUKTUR
+        |==================================================
+        */
         if ($user->role === 'instruktur') {
 
             $jadwalsHariIni = $user->jadwals()
@@ -82,9 +138,11 @@ class DashboardController extends Controller
             ));
         }
 
-        // ======================
-        // ROLE TIDAK VALID
-        // ======================
+        /*
+        |==================================================
+        | ROLE TIDAK VALID
+        |==================================================
+        */
         abort(403);
     }
 }

@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Jadwal;
 use App\Models\Absensi;
+use App\Models\AbsensiInstruktur;
+use App\Models\Keuangan;
 use App\Models\Peserta;
 use App\Models\Sekolah;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -38,27 +41,44 @@ class AbsensiController extends Controller
         ));
     }
 
-    public function store(Request $request, Jadwal $jadwal)
+        public function store(Request $request, Jadwal $jadwal)
     {
-        // dd($request->all());
-        $tanggalAbsensi = $jadwal->tanggal_mulai;
+        DB::transaction(function () use ($request, $jadwal) {
 
-        foreach ($request->absensi ?? [] as $pesertaId => $data) {
+            $tanggalAbsensi = $jadwal->tanggal_mulai;
 
-            Absensi::updateOrCreate(
-                [
-                    'jadwal_id'  => $jadwal->id,
-                    'peserta_id' => $pesertaId,
-                    'tanggal'    => $tanggalAbsensi, 
-                ],
-                [
-                    'status'     => $data['status'] ?? 'alfa',
-                    'keterangan' => $data['keterangan'] ?? null,
-                ]
-            );
-        }
+            foreach ($request->absensi ?? [] as $pesertaId => $data) {
+                Absensi::updateOrCreate(
+                    [
+                        'jadwal_id'  => $jadwal->id,
+                        'peserta_id' => $pesertaId,
+                        'tanggal'    => $tanggalAbsensi,
+                    ],
+                    [
+                        'status'     => $data['status'] ?? 'alfa',
+                        'keterangan' => $data['keterangan'] ?? null,
+                    ]
+                );
+            }
 
-        return back()->with('success', 'Absensi berhasil disimpan');
+            // ===============================
+            // ABSENSI INSTRUKTUR (BARU)
+            // ===============================
+            foreach ($jadwal->instrukturs as $instruktur) {
+                AbsensiInstruktur::updateOrCreate(
+                    [
+                        'jadwal_id'     => $jadwal->id,
+                        'instruktur_id'=> $instruktur->id,
+                        'tanggal'      => $tanggalAbsensi,
+                    ],
+                    [
+                        'status' => 'hadir',
+                    ]
+                );
+            }
+        });
+
+        return back()->with('success', 'Absensi peserta & instruktur berhasil disimpan');
     }
 
 
@@ -154,6 +174,30 @@ class AbsensiController extends Controller
             'tanggal_mulai'   => $tanggalMulai,
             'tanggal_selesai' => $tanggalSelesai,
         ])->stream('rekap-absensi.pdf');
+    }
+
+    public function bayarGaji(Request $request)
+    {
+        $instruktur = User::findOrFail($request->instruktur_id);
+
+        $hadir = AbsensiInstruktur::where('instruktur_id', $instruktur->id)
+            ->where('status', 'hadir')
+            ->whereMonth('tanggal', $request->bulan)
+            ->whereYear('tanggal', $request->tahun)
+            ->count();
+
+        $totalGaji = $hadir * 60000;
+
+        Keuangan::create([
+            'tanggal'    => now(),
+            'tipe'       => 'keluar',
+            'kategori'   => 'Gaji Instruktur',
+            'deskripsi'  => "Gaji {$instruktur->name} ({$hadir} pertemuan)",
+            'jumlah'     => $totalGaji,
+            'sekolah_id' => $instruktur->sekolah_id,
+        ]);
+
+        return back()->with('success', 'Gaji instruktur berhasil dibayarkan');
     }
 
 

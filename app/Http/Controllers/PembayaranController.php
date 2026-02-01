@@ -8,6 +8,8 @@ use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\ValidationException;
+use App\Models\Keuangan;
+use Illuminate\Support\Facades\DB;
 
 class PembayaranController extends Controller
 {
@@ -51,33 +53,68 @@ class PembayaranController extends Controller
      * SIMPAN PEMBAYARAN
      * ===============================
      */
+    
+
     public function store(Request $request)
     {
-        foreach ($request->pembayaran ?? [] as $pesertaId => $data) {
+        DB::transaction(function () use ($request) {
 
-            $status = isset($data['status']) ? 'lunas' : 'belum';
+            foreach ($request->pembayaran ?? [] as $pesertaId => $data) {
 
-            Pembayaran::updateOrCreate(
-                [
-                    'peserta_id' => $pesertaId,
-                    'bulan'      => $request->bulan,
-                    'tahun'      => $request->tahun,
-                ],
-                [
-                    'sekolah_id'    => $data['sekolah_id'],
-                    'status'        => $status,
-                    'jumlah'        => $status === 'lunas'
-                                        ? ($data['jumlah'] ?? 0)
-                                        : null,
-                    'tanggal_bayar' => $status === 'lunas'
-                                        ? ($data['tanggal_bayar'] ?? now()->toDateString())
-                                        : null,
-                ]
-            );
-        }
+                $status = isset($data['status']) ? 'lunas' : 'belum';
 
-        return back()->with('success', 'Pembayaran berhasil disimpan');
+                // simpan / update pembayaran
+                $pembayaran = Pembayaran::updateOrCreate(
+                    [
+                        'peserta_id' => $pesertaId,
+                        'bulan'      => $request->bulan,
+                        'tahun'      => $request->tahun,
+                    ],
+                    [
+                        'sekolah_id'    => $data['sekolah_id'],
+                        'status'        => $status,
+                        'jumlah'        => $status === 'lunas' ? 150000 : null,
+                        'tanggal_bayar' => $status === 'lunas'
+                                            ? ($data['tanggal_bayar'] ?? now()->toDateString())
+                                            : null,
+                    ]
+                );
+
+                /*
+                |----------------------------------------------------
+                | KEUANGAN (UANG MASUK)
+                |----------------------------------------------------
+                */
+                if ($status === 'lunas') {
+
+                    Keuangan::updateOrCreate(
+                        [
+                            'sumber_id'    => $pembayaran->id,
+                            'sumber_type' => Pembayaran::class,
+                        ],
+                        [
+                            'tanggal'    => $pembayaran->tanggal_bayar,
+                            'tipe'       => 'masuk',
+                            'kategori'   => 'Pembayaran Peserta',
+                            'deskripsi'  => 'Pembayaran peserta ID ' . $pesertaId,
+                            'jumlah'     => 150000,
+                            'sekolah_id' => $data['sekolah_id'],
+                        ]
+                    );
+
+                } else {
+
+                    // jika batal lunas → hapus uang masuk
+                    Keuangan::where('sumber_id', $pembayaran->id)
+                        ->where('sumber_type', Pembayaran::class)
+                        ->delete();
+                }
+            }
+        });
+
+        return back()->with('success', 'Pembayaran & keuangan berhasil disimpan');
     }
+
 
 
     /**

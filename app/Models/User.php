@@ -80,5 +80,11 @@ class User extends Authenticatable
         return $this->belongsTo(Sekolah::class);
     }
 
+    public function absensiInstrukturs()
+    {
+        return $this->hasMany(\App\Models\AbsensiInstruktur::class, 'instruktur_id');
+    }
+
+
 
 }

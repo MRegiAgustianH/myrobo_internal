@@ -77,6 +77,12 @@
     <div>
         <p class="text-[11px] uppercase tracking-wide text-gray-700 mb-2">Keuangan</p>
 
+        <a href="{{ route('keuangan.index') }}"
+        class="{{ $menuClass }} mt-1 {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+            <i data-feather="activity" class="w-4 h-4"></i>
+            Pengeluaran
+        </a>
+
         <a href="{{ route('pembayaran.index') }}"
         class="{{ $menuClass }} {{ request()->routeIs('pembayaran.index') ? $active : $hover }}">
             <i data-feather="credit-card" class="w-4 h-4"></i>
@@ -88,6 +94,7 @@
             <i data-feather="file-text" class="w-4 h-4"></i>
             Cetak Invoice
         </a>
+        
     </div>
 
     <div>
