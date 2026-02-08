@@ -120,7 +120,11 @@ Pembayaran Bulanan
     <div class="text-xs text-blue-700 mb-3">Sekolah</div>
 
     <div class="flex justify-between items-center">
-        <span class="font-semibold">Rp 150.000</span>
+        <input type="number" 
+               name="pembayaran[{{ $p->id }}][jumlah]"
+               value="{{ $pay ? $pay->jumlah : ($p->sekolah->nominal_pembayaran ?? 150000) }}" 
+               class="border rounded px-2 py-1 text-sm w-32 pay-amount"
+               {{ $pay?->status !== 'lunas' ? 'disabled' : '' }}>
         <input type="checkbox"
             name="pembayaran[{{ $p->id }}][status]"
             class="pay-check"
@@ -148,7 +152,11 @@ Pembayaran Bulanan
     <div class="text-xs text-purple-700 mb-3">Home Private</div>
 
     <div class="flex justify-between items-center">
-        <span class="font-semibold">Rp 450.000</span>
+        <input type="number"
+               name="pembayaran[{{ $hp->id }}][jumlah]"
+               value="{{ $pay ? $pay->jumlah : 450000 }}"
+               class="border rounded px-2 py-1 text-sm w-32 pay-amount"
+               {{ $pay?->status !== 'lunas' ? 'disabled' : '' }}>
         <input type="checkbox"
             name="pembayaran[{{ $hp->id }}][status]"
             class="pay-check"
@@ -196,7 +204,13 @@ Pembayaran Bulanan
             class="pay-check"
             {{ $pay?->status === 'lunas' ? 'checked' : '' }}>
     </td>
-    <td class="text-center">Rp 150.000</td>
+    <td class="text-center">
+        <input type="number"
+               name="pembayaran[{{ $p->id }}][jumlah]"
+               value="{{ $pay ? $pay->jumlah : ($p->sekolah->nominal_pembayaran ?? 150000) }}"
+               class="border rounded px-2 py-1 text-sm w-24 text-center pay-amount"
+               {{ $pay?->status !== 'lunas' ? 'disabled' : '' }}>
+    </td>
     <td class="text-center">
         <input type="date"
             name="pembayaran[{{ $p->id }}][tanggal_bayar]"
@@ -221,7 +235,13 @@ Pembayaran Bulanan
             class="pay-check"
             {{ $pay?->status === 'lunas' ? 'checked' : '' }}>
     </td>
-    <td class="text-center">Rp 450.000</td>
+    <td class="text-center">
+        <input type="number"
+               name="pembayaran[{{ $hp->id }}][jumlah]"
+               value="{{ $pay ? $pay->jumlah : 450000 }}"
+               class="border rounded px-2 py-1 text-sm w-24 text-center pay-amount"
+               {{ $pay?->status !== 'lunas' ? 'disabled' : '' }}>
+    </td>
     <td class="text-center">
         <input type="date"
             name="pembayaran[{{ $hp->id }}][tanggal_bayar]"
@@ -257,14 +277,19 @@ document.querySelectorAll('.pay-check').forEach(cb => {
         const date = box.querySelector('input[type=date]');
         if (!date) return;
 
+        const amount = box.querySelector('.pay-amount');
+
         if (this.checked) {
             date.disabled = false;
+            if (amount) amount.disabled = false;
+
             if (!date.value) {
                 date.value = new Date().toISOString().slice(0,10);
             }
         } else {
             date.value = '';
             date.disabled = true;
+            if (amount) amount.disabled = true;
         }
     });
 });

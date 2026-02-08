@@ -20,7 +20,6 @@ class Pembayaran extends Model
 
     protected $casts = [
         'tanggal_bayar' => 'date',
-        'jumlah'        => 'decimal:2',
     ];
 
     public function peserta()

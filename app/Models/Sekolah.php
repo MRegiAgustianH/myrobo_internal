@@ -14,6 +14,7 @@ class Sekolah extends Model
         'alamat',
         // 'logo,',
         'kontak',
+        'nominal_pembayaran',
         'tgl_mulai_kerjasama',
         'tgl_akhir_kerjasama',
     ];

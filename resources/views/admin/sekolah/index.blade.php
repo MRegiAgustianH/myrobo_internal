@@ -91,6 +91,7 @@ Manajemen Sekolah
                 <tr class="text-gray-600 uppercase text-xs tracking-wider">
                     <th class="px-4 py-3 text-left">Sekolah</th>
                     <th class="px-4 py-3 text-center">Kontak</th>
+                    <th class="px-4 py-3 text-center">Nominal</th>
                     <th class="px-4 py-3 text-center">Mulai</th>
                     <th class="px-4 py-3 text-center w-48">Aksi</th>
                 </tr>
@@ -108,6 +109,10 @@ Manajemen Sekolah
 
                     <td class="px-4 py-3 text-center">
                         {{ $s->kontak }}
+                    </td>
+
+                    <td class="px-4 py-3 text-center">
+                        Rp {{ number_format($s->nominal_pembayaran, 0, ',', '.') }}
                     </td>
 
                     <td class="px-4 py-3 text-center">
@@ -203,6 +208,12 @@ function schoolForm(data = {}) {
                    value="${data.kontak ?? ''}">
         </div>
 
+        <div>
+            <label class="font-medium">Nominal Pembayaran (Rp)</label>
+            <input id="nominal" type="number" class="w-full px-3 py-2 border rounded"
+                   value="${data.nominal_pembayaran ?? 150000}">
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="font-medium">Mulai Kerja Sama</label>
@@ -238,6 +249,7 @@ function submitForm(action, method) {
         <input type="hidden" name="nama_sekolah" value="${nama.value}">
         <input type="hidden" name="alamat" value="${alamat.value}">
         <input type="hidden" name="kontak" value="${kontak.value}">
+        <input type="hidden" name="nominal_pembayaran" value="${nominal.value}">
         <input type="hidden" name="tgl_mulai_kerjasama" value="${mulai.value}">
         <input type="hidden" name="tgl_akhir_kerjasama" value="${akhir.value}">
     `;

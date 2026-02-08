@@ -24,6 +24,7 @@ class SekolahController extends Controller
             'nama_sekolah'           => 'required|string|max:255',
             'alamat'                 => 'required|string',
             'kontak'                 => 'required|string|max:50',
+            'nominal_pembayaran'     => 'required|numeric|min:0',
             'tgl_mulai_kerjasama'    => 'required|date',
             'tgl_akhir_kerjasama'    => 'nullable|date|after_or_equal:tgl_mulai_kerjasama',
         ]);
@@ -46,6 +47,7 @@ class SekolahController extends Controller
             'nama_sekolah'           => 'required|string|max:255',
             'alamat'                 => 'required|string',
             'kontak'                 => 'required|string|max:50',
+            'nominal_pembayaran'     => 'required|numeric|min:0',
             'tgl_mulai_kerjasama'    => 'required|date',
             'tgl_akhir_kerjasama'    => 'nullable|date|after_or_equal:tgl_mulai_kerjasama',
         ]);

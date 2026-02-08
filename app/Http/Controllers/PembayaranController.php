@@ -32,7 +32,8 @@ class PembayaranController extends Controller
         // ===============================
         // PESERTA SEKOLAH
         // ===============================
-        $pesertaSekolah = Peserta::when($jenisPeserta === 'sekolah', fn ($q) => $q)
+        $pesertaSekolah = Peserta::with('sekolah')
+            ->when($jenisPeserta === 'sekolah', fn ($q) => $q)
             ->when($jenisPeserta === 'home_private', fn ($q) => $q->whereRaw('1 = 0'))
             ->when($sekolahId, fn ($q) => $q->where('sekolah_id', $sekolahId))
             ->orderBy('nama')
@@ -100,8 +101,11 @@ class PembayaranController extends Controller
                 $isLunas = isset($data['status']);
 
                 $status = $isLunas ? 'lunas' : 'belum';
+                $default = $jenis === 'home_private' ? 450000 : 150000;
+                $inputJumlah = isset($data['jumlah']) ? (int) $data['jumlah'] : null;
+
                 $jumlah = $isLunas
-                    ? ($jenis === 'home_private' ? 450000 : 150000)
+                    ? ($inputJumlah ?: $default)
                     : null;
 
                 // ===============================
