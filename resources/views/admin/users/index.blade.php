@@ -13,7 +13,7 @@ Manajemen User
     </h2>
 
     <button onclick="openCreateModal()"
-        class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold transition">
+        class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
         <i data-feather="plus" class="w-4 h-4"></i>
         Tambah User
     </button>

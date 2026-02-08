@@ -7,14 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class Rapor extends Model
 {
     protected $fillable = [
-
-        'sekolah_id',   
+        'rapor_tugas_id',
+        'sekolah_id',
         'peserta_id',
         'semester_id',
+        'materi_id',
         'materi',
         'nilai_akhir',
+        'catatan_revisi',
         'kesimpulan',
+        'status',
     ];
+
+    public function tugas()
+    {
+        return $this->belongsTo(RaporTugas::class, 'rapor_tugas_id');
+    }
 
     public function sekolah()
     {
@@ -39,6 +47,12 @@ class Rapor extends Model
     {
         return $this->belongsTo(Peserta::class, 'peserta_id');
     }
+
+    public function materiRef()
+    {
+        return $this->belongsTo(Materi::class, 'materi_id');
+    }
+
 
     
 

@@ -38,4 +38,10 @@ class Sekolah extends Model
         return $this->hasMany(Rapor::class);
     }
 
+    public function raporTugas()
+    {
+        return $this->hasMany(RaporTugas::class);
+    }
+
+
 }

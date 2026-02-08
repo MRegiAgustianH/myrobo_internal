@@ -12,11 +12,14 @@ Manajemen Materi
         Daftar Materi
     </h2>
 
+    @if(! $readonly)
     <button onclick="openCreateModal()"
         class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
         <i data-feather="plus" class="w-4 h-4"></i>
         Tambah Materi
     </button>
+    @endif
+
 </div>
 
 @if(session('success'))
@@ -49,30 +52,40 @@ Manajemen Materi
     </div>
 
     <div class="flex flex-wrap gap-2 pt-3">
-        {{-- KELOLA MODUL --}}
-        @if(in_array(auth()->user()->role, ['admin','instruktur']))
+
+        {{-- MODUL --}}
         <a href="{{ route('materi.modul.index', $m->id) }}"
-           class="flex-1 bg-indigo-100 text-indigo-700 text-xs py-2 rounded text-center">
+        class="flex-1 bg-indigo-100 text-indigo-700 text-xs py-2 rounded text-center">
             Modul
         </a>
-        @endif
 
-        <button onclick='openEditModal(@json($m))'
-            class="flex-1 bg-yellow-100 text-yellow-700 text-xs py-2 rounded">
-            Edit
-        </button>
+        {{-- KOMPETENSI --}}
+        <a href="{{ route('materi.kompetensi.index', $m->id) }}"
+        class="flex-1 bg-green-100 text-green-700 text-xs py-2 rounded text-center">
+            Kompetensi
+        </a>
 
-        <form action="{{ route('materi.destroy',$m->id) }}"
-              method="POST"
-              onsubmit="return confirmDelete(event)">
-            @csrf
-            @method('DELETE')
-            <button
-                class="bg-red-100 text-red-700 text-xs px-3 py-2 rounded">
-                Hapus
+        {{-- ADMIN ONLY --}}
+        @if(! $readonly)
+            <button onclick='openEditModal(@json($m))'
+                class="flex-1 bg-yellow-100 text-yellow-700 text-xs py-2 rounded">
+                Edit
             </button>
-        </form>
+
+            <form action="{{ route('admin.materi.destroy',$m->id) }}"
+                method="POST"
+                onsubmit="return confirmDelete(event)">
+                @csrf
+                @method('DELETE')
+                <button
+                    class="bg-red-100 text-red-700 text-xs px-3 py-2 rounded">
+                    Hapus
+                </button>
+            </form>
+        @endif
     </div>
+
+
 
 </div>
 @endforeach
@@ -113,32 +126,41 @@ Manajemen Materi
     <td class="px-4 py-2 text-center">
         <div class="inline-flex gap-2 justify-center flex-wrap">
 
-            {{-- KELOLA MODUL --}}
-            @if(in_array(auth()->user()->role, ['admin','instruktur']))
+            {{-- MODUL --}}
             <a href="{{ route('materi.modul.index', $m->id) }}"
-               class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded text-xs">
+            class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded text-xs">
                 Modul
             </a>
-            @endif
 
-            <button onclick='openEditModal(@json($m))'
-                class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
-                Edit
-            </button>
+            {{-- KOMPETENSI --}}
+            <a href="{{ route('materi.kompetensi.index', $m->id) }}"
+            class="bg-green-100 text-green-700 px-3 py-1 rounded text-xs">
+                Kompetensi
+            </a>
 
-            <form action="{{ route('materi.destroy',$m->id) }}"
-                  method="POST"
-                  onsubmit="return confirmDelete(event)">
-                @csrf
-                @method('DELETE')
-                <button
-                    class="bg-red-100 text-red-700 px-3 py-1 rounded text-xs">
-                    Hapus
+            {{-- ADMIN ONLY --}}
+            @if(! $readonly)
+                <button onclick='openEditModal(@json($m))'
+                    class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-xs">
+                    Edit
                 </button>
-            </form>
+
+                <form action="{{ route('admin.materi.destroy',$m->id) }}"
+                    method="POST"
+                    onsubmit="return confirmDelete(event)">
+                    @csrf
+                    @method('DELETE')
+                    <button
+                        class="bg-red-100 text-red-700 px-3 py-1 rounded text-xs">
+                        Hapus
+                    </button>
+                </form>
+            @endif
 
         </div>
     </td>
+
+
 </tr>
 @endforeach
 </tbody>
@@ -146,6 +168,7 @@ Manajemen Materi
 
 </div>
 
+@if(! $readonly)
 {{-- ================= SCRIPT ================= --}}
 <script>
 function openCreateModal() {
@@ -154,7 +177,7 @@ function openCreateModal() {
         html: materiForm(),
         showConfirmButton: false,
         width: 600,
-        footer: actionButtons("{{ route('materi.store') }}", 'POST')
+        footer: actionButtons("{{ route('admin.materi.store') }}", 'POST')
     });
 }
 
@@ -243,5 +266,6 @@ function confirmDelete(e) {
     });
 }
 </script>
+@endif
 
 @endsection

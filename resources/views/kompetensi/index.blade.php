@@ -19,15 +19,26 @@ Manajemen Kompetensi
 </div>
 @endif
 
-{{-- ACTION BAR --}}
-<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
-    <a href="{{ route('rapor.manajemen') }}"
+{{-- ================= HEADER INFO ================= --}}
+<div class="mb-4">
+    <p class="text-sm text-gray-500">Materi</p>
+    <h2 class="text-lg font-semibold text-gray-800">
+        {{ $materi->nama_materi }}
+    </h2>
+</div>
+
+{{-- ================= ACTION BAR ================= --}}
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+
+    <a href="{{ route('materi.index') }}"
        class="text-sm text-gray-600 hover:underline">
-        ← Kembali ke Manajemen Rapor
+        ← Kembali ke Materi
     </a>
 
-    <a href="{{ route('kompetensi.create') }}"
-       class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
+    <a href="{{ route('kompetensi.create', ['materi_id' => $materi->id]) }}"
+       class="inline-flex items-center gap-2
+              bg-[#8FBFC2] hover:bg-[#6FA9AD]
+              text-white px-4 py-2 rounded-lg text-sm transition">
         <i data-feather="plus" class="w-4 h-4"></i>
         Tambah Kompetensi
     </a>
@@ -36,16 +47,19 @@ Manajemen Kompetensi
 {{-- ================= MOBILE CARD VIEW ================= --}}
 <div class="grid grid-cols-1 gap-4 md:hidden">
 
-@foreach($kompetensis as $k)
+@forelse($kompetensis as $k)
 <div class="bg-white rounded-xl shadow p-4 space-y-3">
 
     <div>
         <p class="font-semibold text-gray-800">
             {{ $k->nama_kompetensi }}
         </p>
+        <p class="text-xs text-gray-500">
+            {{ $k->indikator_kompetensis_count }} indikator
+        </p>
     </div>
 
-    <div class="flex gap-2 pt-2">
+    <div class="flex gap-2 pt-2 border-t">
         <a href="{{ route('kompetensi.indikator.index', $k->id) }}"
            class="flex-1 bg-green-100 text-green-700 text-xs py-2 rounded text-center">
             Indikator
@@ -69,12 +83,16 @@ Manajemen Kompetensi
     </div>
 
 </div>
-@endforeach
+@empty
+<div class="text-center text-sm text-gray-500 py-6">
+    Belum ada kompetensi untuk materi ini
+</div>
+@endforelse
 
 </div>
 
 {{-- ================= DESKTOP TABLE VIEW ================= --}}
-<div class="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
+<div class="hidden md:block bg-white rounded-xl shadow overflow-x-auto">
 
 <table class="min-w-full text-sm">
     <thead class="bg-gray-50 border-b">
@@ -82,17 +100,24 @@ Manajemen Kompetensi
             <th class="px-4 py-3 text-left">
                 Nama Kompetensi
             </th>
-            <th class="px-4 py-3 text-center w-48">
+            <th class="px-4 py-3 text-center">
+                Indikator
+            </th>
+            <th class="px-4 py-3 text-center w-56">
                 Aksi
             </th>
         </tr>
     </thead>
 
     <tbody class="divide-y">
-    @foreach($kompetensis as $k)
+    @forelse($kompetensis as $k)
         <tr class="hover:bg-gray-50 transition">
             <td class="px-4 py-3 font-medium">
                 {{ $k->nama_kompetensi }}
+            </td>
+
+            <td class="px-4 py-3 text-center text-gray-600 text-xs">
+                {{ $k->indikator_kompetensis_count }}
             </td>
 
             <td class="px-4 py-3 text-center">
@@ -122,7 +147,14 @@ Manajemen Kompetensi
                 </div>
             </td>
         </tr>
-    @endforeach
+    @empty
+        <tr>
+            <td colspan="3"
+                class="px-4 py-6 text-center text-gray-500 text-sm">
+                Belum ada kompetensi untuk materi ini
+            </td>
+        </tr>
+    @endforelse
     </tbody>
 </table>
 

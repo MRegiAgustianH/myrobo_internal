@@ -7,41 +7,82 @@ use Illuminate\Http\Request;
 
 class MateriController extends Controller
 {
+    /**
+     * Daftar materi
+     */
     public function index()
     {
-        $materis = Materi::latest()->get();
-        return view('admin.materi.index', compact('materis'));
+        $materis = Materi::withCount('kompetensis')
+            ->orderBy('nama_materi')
+            ->get();
+
+        $readonly = auth()->user()->role === 'instruktur';
+
+        return view('admin.materi.index', compact('materis', 'readonly'));
     }
 
+    /**
+     * Simpan materi
+     */
     public function store(Request $request)
     {
-        $request->validate([
+        $this->authorizeAdmin();
+
+        $validated = $request->validate([
             'nama_materi' => 'required|string|max:255',
             'deskripsi'   => 'nullable|string',
             'status'      => 'required|in:aktif,nonaktif',
         ]);
 
-        Materi::create($request->all());
+        Materi::create($validated);
 
         return back()->with('success', 'Materi berhasil ditambahkan');
     }
 
+    /**
+     * Update materi
+     */
     public function update(Request $request, Materi $materi)
     {
-        $request->validate([
+        $this->authorizeAdmin();
+
+        $validated = $request->validate([
             'nama_materi' => 'required|string|max:255',
             'deskripsi'   => 'nullable|string',
             'status'      => 'required|in:aktif,nonaktif',
         ]);
 
-        $materi->update($request->all());
+        $materi->update($validated);
 
         return back()->with('success', 'Materi berhasil diperbarui');
     }
 
+    /**
+     * Hapus materi
+     */
     public function destroy(Materi $materi)
     {
+        $this->authorizeAdmin();
+
+        if ($materi->kompetensis()->exists()) {
+            return back()->with(
+                'error',
+                'Materi tidak dapat dihapus karena masih memiliki kompetensi'
+            );
+        }
+
         $materi->delete();
+
         return back()->with('success', 'Materi berhasil dihapus');
+    }
+
+    /**
+     * Proteksi admin
+     */
+    private function authorizeAdmin(): void
+    {
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Akses ditolak');
+        }
     }
 }

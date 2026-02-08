@@ -19,11 +19,6 @@ Manajemen Rapor
             <i data-feather="plus" class="w-4 h-4"></i>
             Tambah Rapor
         </a>
-
-        <a href="{{ route('kompetensi.index') }}"
-           class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm shadow">
-            Kelola Kompetensi
-        </a>
     </div>
 </div>
 
@@ -32,24 +27,26 @@ Manajemen Rapor
 
 @forelse($rapors as $rapor)
     <div
-        class="bg-white rounded-2xl shadow-md hover:shadow-xl transition overflow-hidden border">
+        class="group bg-white rounded-2xl border shadow-sm
+               hover:shadow-xl hover:-translate-y-1
+               transition-all duration-300 overflow-hidden">
 
-        {{-- HEADER CARD --}}
-        <div class="bg-[#8FBFC2] text-white px-5 py-4">
+        {{-- HEADER --}}
+        <div class="bg-gradient-to-r from-[#8FBFC2] to-[#6FA9AD] px-5 py-4 text-white">
             <h3 class="font-semibold text-base truncate">
                 {{ $rapor->peserta->nama }}
             </h3>
-            <p class="text-xs opacity-90">
+            <p class="text-xs opacity-90 truncate">
                 {{ $rapor->sekolah->nama_sekolah }}
             </p>
         </div>
 
-        {{-- BODY CARD --}}
-        <div class="p-5 space-y-3 text-sm text-gray-700">
+        {{-- BODY --}}
+        <div class="p-5 space-y-4 text-sm text-gray-700">
 
-            <div class="flex justify-between">
+            <div class="flex justify-between items-center">
                 <span class="text-gray-500">Semester</span>
-                <span class="font-medium">
+                <span class="font-medium text-gray-800">
                     {{ $rapor->semester->nama_semester }}
                 </span>
             </div>
@@ -58,50 +55,92 @@ Manajemen Rapor
                 <span class="text-gray-500">Nilai Akhir</span>
 
                 <span
-                    class="px-3 py-1 rounded-full text-xs font-semibold
-                    {{ $rapor->nilai_akhir >= 85 ? 'bg-emerald-100 text-emerald-700' :
-                       ($rapor->nilai_akhir >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                       'bg-red-100 text-red-700') }}">
+                    class="px-3 py-1 rounded-full text-xs font-semibold tracking-wide
+                    {{ $rapor->nilai_akhir === 'A'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : ($rapor->nilai_akhir === 'B'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700') }}">
                     {{ $rapor->nilai_akhir }}
                 </span>
+            </div>
+
+            {{-- Materi --}}
+            <div class="pt-2 border-t text-xs text-gray-500 line-clamp-2">
+                {{ $rapor->materi }}
             </div>
         </div>
 
         {{-- FOOTER ACTION --}}
-        <div class="border-t px-4 py-3 bg-gray-50 flex justify-between gap-2 text-xs">
+        <div class="px-4 py-3 bg-gray-50 border-t">
+            <div class="flex gap-2 text-xs">
 
-            <a href="{{ route('rapor.cetak', $rapor->id) }}"
-            target="_blank"
-            class="flex-1 text-center bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 rounded flex items-center justify-center gap-1">
-                Cetak
-            </a>
+                <a href="{{ route('rapor.cetak', $rapor->id) }}"
+                   target="_blank"
+                   class="flex-1 inline-flex items-center justify-center gap-1
+                          bg-indigo-600 hover:bg-indigo-700
+                          text-white py-2 rounded-lg transition">
+                    Cetak
+                </a>
 
+                <a href="{{ route('rapor.edit', $rapor->id) }}"
+                   class="flex-1 inline-flex items-center justify-center gap-1
+                          bg-yellow-400 hover:bg-yellow-500
+                          text-gray-800 py-2 rounded-lg transition">
+                    Edit
+                </a>
 
-            <a href="{{ route('rapor.edit', $rapor->id) }}"
-               class="flex-1 text-center bg-yellow-400 hover:bg-yellow-500 py-1.5 rounded text-gray-800">
-                Edit
-            </a>
-
-            <form method="POST"
-                  action="{{ route('rapor.destroy', $rapor->id) }}"
-                  onsubmit="return confirm('Hapus rapor ini?')"
-                  class="flex-1">
-                @csrf
-                @method('DELETE')
-                <button
-                    class="w-full bg-red-500 hover:bg-red-600 text-white py-1.5 rounded">
+                <button type="button"
+                    onclick="confirmDeleteRapor({{ $rapor->id }})"
+                    class="flex-1 inline-flex items-center justify-center gap-1
+                           bg-red-500 hover:bg-red-600
+                           text-white py-2 rounded-lg transition">
                     Hapus
                 </button>
-            </form>
+
+            </div>
         </div>
 
     </div>
 @empty
-    <div class="col-span-full text-center py-12 text-gray-500">
+    <div class="col-span-full text-center py-16 text-gray-500">
         Belum ada data rapor.
     </div>
 @endforelse
 
 </div>
+
+
+@push('scripts')
+<script>
+function confirmDeleteRapor(id) {
+    Swal.fire({
+        title: 'Hapus Rapor?',
+        text: 'Rapor yang dihapus tidak dapat dikembalikan',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc2626'
+    }).then((result) => {
+        if (result.isConfirmed) {
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/rapor/${id}`;
+
+            form.innerHTML = `
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="_method" value="DELETE">
+            `;
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+@endpush
+
 
 @endsection

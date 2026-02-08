@@ -13,9 +13,9 @@ class IndikatorKompetensi extends Model
         return $this->belongsTo(Kompetensi::class);
     }
 
-    public function nilaiRapors()
+    public function raporNilais()
     {
-        return $this->hasMany(NilaiRapor::class);
+         return $this->hasMany(NilaiRapor::class,'indikator_kompetensi_id');
     }
 
     

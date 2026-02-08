@@ -5,6 +5,11 @@
     <title>Rapor Ekstrakurikuler</title>
 
     <style>
+        @page {
+            size: 210mm 330mm; /* F4 */
+            margin: 15mm;
+        }
+
         body {
             font-family: "Times New Roman", Times, serif;
             font-size: 11pt;
@@ -12,7 +17,7 @@
         }
 
         .container {
-            padding: 15px;
+            padding: 5px;
         }
 
         /* ===== HEADER ===== */
@@ -57,6 +62,7 @@
             text-align: center;
             height: 20px;
             background-color: #2f75b5;
+            color: #fff;
         }
 
         .nilai-huruf {
@@ -67,10 +73,6 @@
         }
 
         /* ===== INFO ===== */
-        .info {
-            margin: 10px 0;
-        }
-
         .info table {
             width: 100%;
             border-collapse: collapse;
@@ -93,6 +95,11 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 5px;
+            page-break-inside: auto;
+        }
+
+        table.penilaian tr {
+            page-break-inside: avoid;
         }
 
         table.penilaian th,
@@ -110,8 +117,9 @@
 
         .center {
             text-align: center;
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: bold;
+            font-family: DejaVu Sans;
         }
 
         .kesimpulan {
@@ -133,11 +141,6 @@
             width: 90px;
             margin-bottom: 4px;
         }
-
-        .check {
-            font-family: DejaVu Sans;
-            font-size: 14pt;
-        }
     </style>
 </head>
 <body>
@@ -156,26 +159,22 @@
                     <img src="{{ public_path('images/alazlogo.jpg') }}" class="logo">
                 @elseif(str_contains($namaSekolah, 'islam kreatif'))
                     <img src="{{ public_path('images/iklogo.jpg') }}" class="logo">
-                @else
-                    {{-- fallback jika sekolah lain --}}
-                    {{-- <img src="{{ public_path('images/applogo.png') }}" class="logo"> --}}
                 @endif
             </td>
 
-            <td width="85%" valign="top" align="center">
+            <td width="70%" valign="top" align="center">
                 <div class="title">LAPORAN KEGIATAN EKSTRAKURIKULER</div>
                 @php
                     $tahunSekarang = now()->year;
                     $tahunDepan = $tahunSekarang + 1;
                 @endphp
-
                 <div class="subtitle">
                     SEMESTER {{ $rapor->semester->nama_semester }}<br>
                     TAHUN AJARAN {{ $tahunSekarang }} - {{ $tahunDepan }}
                 </div>
-
             </td>
-            <td width="15%" valign="top">
+
+            <td width="15%" valign="top" align="right">
                 <img src="{{ public_path('images/applogo.png') }}" class="logo">
             </td>
         </tr>
@@ -183,11 +182,10 @@
 
     <hr class="header-hr">
 
-    {{-- ================= INFO SISWA (VERTIKAL) ================= --}}
+    {{-- ================= INFO SISWA ================= --}}
     <div class="info">
         <table>
             <tr>
-                {{-- DATA KIRI --}}
                 <td width="70%">
                     <table>
                         <tr>
@@ -208,7 +206,6 @@
                     </table>
                 </td>
 
-                {{-- NILAI KANAN --}}
                 <td width="15%" align="right" valign="top">
                     <table class="nilai-box">
                         <tr>
@@ -216,7 +213,7 @@
                         </tr>
                         <tr>
                             <td class="nilai-huruf">
-                                {{ $rapor->nilai_akhir ?? 'A' }}
+                                {{ $rapor->nilai_akhir }}
                             </td>
                         </tr>
                     </table>
@@ -231,7 +228,7 @@
         {{ $rapor->materi }}
     </div>
 
-    {{-- ================= KEMAMPUAN SISWA ================= --}}
+    {{-- ================= PENILAIAN ================= --}}
     <div class="box">
         <strong>Kemampuan Siswa</strong>
 
@@ -243,9 +240,9 @@
                     <th colspan="3">Nilai</th>
                 </tr>
                 <tr>
-                    <th>Cukup</th>
-                    <th>Baik</th>
-                    <th>Sangat<br>Baik</th>
+                    <th>C</th>
+                    <th>B</th>
+                    <th>SB</th>
                 </tr>
             </thead>
             <tbody>
@@ -260,26 +257,19 @@
                 @php $rowspan = count($items); @endphp
 
                 @foreach($items as $i => $item)
-                @php $nilai = strtolower((string)$item->nilai); @endphp
+                @php $nilai = strtoupper($item->nilai); @endphp
                 <tr>
                     @if($i === 0)
-                    <td rowspan="{{ $rowspan }}" style="vertical-align:top; font-weight:bold;">
+                    <td rowspan="{{ $rowspan }}" style="font-weight:bold;">
                         {{ $kompetensi }}
                     </td>
                     @endif
 
                     <td>{{ $item->indikatorKompetensi->nama_indikator }}</td>
 
-                    <td class="center">
-                        <span class="check">{!! in_array($nilai, ['1','cukup','c']) ? '&radic;' : '&nbsp;' !!}</span>
-                    </td>
-                    <td class="center">
-                        <span class="check">{!! in_array($nilai, ['2','baik','b']) ? '&radic;' : '&nbsp;' !!}</span>
-                    </td>
-                    <td class="center">
-                        <span class="check">{!! in_array($nilai, ['3','sangat_baik','sangat baik','sb']) ? '&radic;' : '&nbsp;' !!}</span>
-                    </td>
-
+                    <td class="center">{!! $nilai === 'C' ? '&#10003;' : '' !!}</td>
+                    <td class="center">{!! $nilai === 'B' ? '&#10003;' : '' !!}</td>
+                    <td class="center">{!! $nilai === 'SB' ? '&#10003;' : '' !!}</td>
                 </tr>
                 @endforeach
             @endforeach

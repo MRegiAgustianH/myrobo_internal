@@ -1,229 +1,189 @@
 @php
     $rapor = $rapor ?? null;
+    $readonly = $readonly ?? false;
 @endphp
+
+{{-- ================= CATATAN REVISI ================= --}}
+@if($rapor && ($rapor->status === 'revision' || $rapor->catatan_revisi))
+<div class="mb-6 bg-red-50 border border-red-200 rounded-2xl p-5 text-sm">
+    <div class="flex items-start gap-3">
+        <i data-feather="alert-triangle" class="w-5 h-5 text-red-600 mt-0.5"></i>
+        <div>
+            <p class="font-semibold text-red-700 mb-1">
+                Catatan Revisi dari Admin
+            </p>
+            <p class="text-gray-700 leading-relaxed">
+                {{ $rapor->catatan_revisi }}
+            </p>
+        </div>
+    </div>
+</div>
+@endif
 
 <div class="space-y-10">
 
 {{-- ================= DATA RAPOR ================= --}}
-<div class="bg-white border rounded-2xl p-6 shadow-sm">
-    <h2 class="text-base font-semibold mb-6 text-gray-800">
-        Data Rapor
-    </h2>
+<div class="bg-white border rounded-3xl p-6 shadow-sm">
+    <div class="flex items-center gap-2 mb-6">
+        <i data-feather="file-text" class="w-5 h-5 text-gray-600"></i>
+        <h2 class="text-base font-semibold text-gray-800">
+            Data Rapor
+        </h2>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {{-- Sekolah --}}
+        {{-- Materi Acuan --}}
         <div>
-            <label class="block text-sm font-medium mb-1">Sekolah</label>
-            <select id="sekolah_id" name="sekolah_id"
-                class="w-full border rounded px-3 py-2"
-                onchange="loadPeserta(this.value)"
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Materi Acuan
+                <span class="text-xs text-gray-400">(master kompetensi)</span>
+            </label>
+            <select id="materi_id" name="materi_id"
+                class="w-full border rounded-xl px-4 py-2 text-sm
+                       focus:ring focus:ring-[#8FBFC2]/40"
+                onchange="loadKompetensi(this.value)"
+                {{ $readonly ? 'disabled' : '' }}
                 required>
-                <option value="">-- Pilih Sekolah --</option>
-                @foreach($sekolahs as $s)
-                    <option value="{{ $s->id }}"
-                        @selected(old('sekolah_id', $rapor->sekolah_id ?? '') == $s->id)>
-                        {{ $s->nama_sekolah }}
+                <option value="">Pilih Materi</option>
+                @foreach($materis as $m)
+                    <option value="{{ $m->id }}"
+                        @selected(old('materi_id', $rapor->materi_id ?? '') == $m->id)>
+                        {{ $m->nama_materi }}
                     </option>
                 @endforeach
             </select>
-        </div>
-
-        {{-- Peserta --}}
-        <div>
-            <label class="block text-sm font-medium mb-1">Peserta</label>
-            <select id="peserta_id" name="peserta_id"
-                class="w-full border rounded px-3 py-2"
-                required>
-                <option value="">-- Pilih Peserta --</option>
-
-                {{-- PRELOAD SAAT EDIT --}}
-                @if(!empty($pesertas))
-                    @foreach($pesertas as $p)
-                        <option value="{{ $p->id }}"
-                            @selected(old('peserta_id', $rapor->peserta_id ?? '') == $p->id)>
-                            {{ $p->nama }}
-                        </option>
-                    @endforeach
-                @endif
-            </select>
-        </div>
-
-        {{-- Semester --}}
-        <div>
-            <label class="block text-sm font-medium mb-1">Semester</label>
-            <select name="semester_id"
-                    class="w-full border rounded-lg px-4 py-2 text-sm"
-                    required>
-                <option value="">-- Pilih Semester --</option>
-                @foreach($semesters as $semester)
-                    <option value="{{ $semester->id }}"
-                        @selected(old('semester_id', $rapor->semester_id ?? '') == $semester->id)>
-                        {{ $semester->nama_semester }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        {{-- Materi --}}
-        <div>
-            <label class="block text-sm font-medium mb-1">Materi</label>
-            <input type="text"
-                   name="materi"
-                   value="{{ old('materi', $rapor->materi ?? '') }}"
-                   class="w-full border rounded-lg px-4 py-2 text-sm"
-                   required>
         </div>
 
         {{-- Nilai Akhir --}}
         <div>
-            <label class="block text-sm font-medium mb-1">Nilai Akhir</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Nilai Akhir
+            </label>
             <select name="nilai_akhir"
-                    class="w-full border rounded-lg px-4 py-2 text-sm"
-                    required>
-                <option value="A" @selected(old('nilai_akhir', $rapor->nilai_akhir ?? '')=='A')>A</option>
-                <option value="B" @selected(old('nilai_akhir', $rapor->nilai_akhir ?? '')=='B')>B</option>
-                <option value="C" @selected(old('nilai_akhir', $rapor->nilai_akhir ?? '')=='C')>C</option>
+                class="w-full border rounded-xl px-4 py-2 text-sm
+                       focus:ring focus:ring-[#8FBFC2]/40"
+                {{ $readonly ? 'disabled' : '' }}
+                required>
+                <option value="">Pilih Nilai</option>
+                @foreach(['A','B','C'] as $n)
+                    <option value="{{ $n }}"
+                        @selected(old('nilai_akhir', $rapor->nilai_akhir ?? '') == $n)>
+                        {{ $n }}
+                    </option>
+                @endforeach
             </select>
+        </div>
+
+        {{-- Materi di Rapor --}}
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Materi pada Rapor
+                <span class="text-xs text-gray-400">(narasi yang muncul di rapor)</span>
+            </label>
+            <textarea name="materi"
+                rows="2"
+                class="w-full border rounded-xl px-4 py-2 text-sm
+                       focus:ring focus:ring-[#8FBFC2]/40"
+                {{ $readonly ? 'readonly' : '' }}
+                required>{{ old('materi', $rapor->materi ?? '') }}</textarea>
         </div>
 
         {{-- Kesimpulan --}}
         <div class="md:col-span-2">
-            <label class="block text-sm font-medium mb-1">Kesimpulan</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Kesimpulan
+            </label>
             <textarea name="kesimpulan"
-                      rows="3"
-                      class="w-full border rounded-lg px-4 py-2 text-sm">{{ old('kesimpulan', $rapor->kesimpulan ?? '') }}</textarea>
-        </div>
-    </div>
-</div>
-
-{{-- ================= PILIH SEMUA ================= --}}
-<div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-    <h3 class="font-semibold text-indigo-700 mb-3 text-sm">
-        Penilaian Cepat (Semua Indikator)
-    </h3>
-
-    <div class="flex flex-wrap gap-6 text-sm">
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="pilih_semua_global"
-                   onclick="pilihSemuaGlobal('C')">
-            <span>Cukup Semua</span>
-        </label>
-
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="pilih_semua_global"
-                   onclick="pilihSemuaGlobal('B')">
-            <span>Baik Semua</span>
-        </label>
-
-        <label class="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="pilih_semua_global"
-                   onclick="pilihSemuaGlobal('SB')">
-            <span>Sangat Baik Semua</span>
-        </label>
-    </div>
-</div>
-
-{{-- ================= PENILAIAN KOMPETENSI ================= --}}
-<div class="space-y-8">
-
-@foreach($kompetensis as $kompetensi)
-<div class="bg-white border rounded-2xl p-6 shadow-sm">
-
-    <h4 class="font-semibold text-gray-800 mb-5">
-        {{ $kompetensi->nama_kompetensi }}
-    </h4>
-
-    <div class="space-y-5">
-    @foreach($kompetensi->indikatorKompetensis as $indikator)
-
-        <div class="flex flex-col md:flex-row md:items-center gap-4">
-
-            <div class="md:flex-1 text-sm text-gray-700">
-                {{ $indikator->nama_indikator }}
-            </div>
-
-            <div class="flex gap-6 text-sm">
-                @php
-                    $nilaiLama = old(
-                        "nilai.$indikator->id",
-                        data_get(
-                            optional($rapor?->nilai)
-                                ->firstWhere('indikator_kompetensi_id', $indikator->id),
-                            'nilai'
-                        )
-                    );
-                @endphp
-
-                <label class="flex items-center gap-1">
-                    <input type="radio"
-                           name="nilai[{{ $indikator->id }}]"
-                           value="C"
-                           class="nilai-indikator"
-                           @checked($nilaiLama === 'C')
-                           required>
-                    Cukup
-                </label>
-
-                <label class="flex items-center gap-1">
-                    <input type="radio"
-                           name="nilai[{{ $indikator->id }}]"
-                           value="B"
-                           class="nilai-indikator"
-                           @checked($nilaiLama === 'B')>
-                    Baik
-                </label>
-
-                <label class="flex items-center gap-1">
-                    <input type="radio"
-                           name="nilai[{{ $indikator->id }}]"
-                           value="SB"
-                           class="nilai-indikator"
-                           @checked($nilaiLama === 'SB')>
-                    Sangat Baik
-                </label>
-            </div>
+                rows="3"
+                class="w-full border rounded-xl px-4 py-2 text-sm
+                       focus:ring focus:ring-[#8FBFC2]/40"
+                {{ $readonly ? 'readonly' : '' }}>{{ old('kesimpulan', $rapor->kesimpulan ?? '') }}</textarea>
         </div>
 
-    @endforeach
     </div>
 </div>
-@endforeach
+
+{{-- ================= PENILAIAN CEPAT ================= --}}
+@if(! $readonly)
+<div class="bg-indigo-50 border border-indigo-200 rounded-3xl p-6">
+    <div class="flex items-center gap-2 mb-4">
+        <i data-feather="zap" class="w-5 h-5 text-indigo-600"></i>
+        <h3 class="font-semibold text-indigo-700 text-sm">
+            Penilaian Cepat
+        </h3>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+        <button type="button"
+            onclick="pilihSemua('C')"
+            class="px-4 py-2 rounded-xl text-sm font-medium
+                   bg-gray-200 hover:bg-gray-300 transition">
+            Cukup Semua
+        </button>
+
+        <button type="button"
+            onclick="pilihSemua('B')"
+            class="px-4 py-2 rounded-xl text-sm font-medium
+                   bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition">
+            Baik Semua
+        </button>
+
+        <button type="button"
+            onclick="pilihSemua('SB')"
+            class="px-4 py-2 rounded-xl text-sm font-medium
+                   bg-green-100 text-green-800 hover:bg-green-200 transition">
+            Sangat Baik Semua
+        </button>
+    </div>
+</div>
+@endif
+
+{{-- ================= PENILAIAN DETAIL ================= --}}
+<div id="penilaian-container" class="space-y-6">
+    @includeWhen(
+        !empty($kompetensis),
+        'admin.rapor._kompetensi_indikator',
+        ['kompetensis' => $kompetensis, 'rapor' => $rapor, 'readonly' => $readonly]
+    )
+</div>
 
 </div>
 
 {{-- ================= SCRIPT ================= --}}
 <script>
-function pilihSemuaGlobal(nilai) {
+function loadKompetensi(materiId) {
+    const box = document.getElementById('penilaian-container');
+
+    if (!materiId) {
+        box.innerHTML =
+            '<div class="text-sm italic text-gray-500">Silakan pilih materi acuan untuk menampilkan kompetensi.</div>';
+        return;
+    }
+
+    box.innerHTML =
+        '<div class="text-sm text-gray-500">Memuat kompetensi...</div>';
+
+    fetch(`/rapor/materi/${materiId}/kompetensi`)
+        .then(res => {
+            if (!res.ok) throw new Error();
+            return res.text();
+        })
+        .then(html => {
+            box.innerHTML = html;
+        })
+        .catch(() => {
+            box.innerHTML =
+                '<div class="text-sm text-red-500">Gagal memuat kompetensi.</div>';
+        });
+}
+
+function pilihSemua(nilai) {
     document.querySelectorAll('.nilai-indikator').forEach(radio => {
+        if (radio.disabled) return;
         if (radio.value === nilai) {
             radio.checked = true;
         }
     });
 }
 </script>
-<script>
-function loadPeserta(sekolahId) {
-    const pesertaSelect = document.getElementById('peserta_id');
-    pesertaSelect.innerHTML = '<option>Loading...</option>';
-
-    if (!sekolahId) {
-        pesertaSelect.innerHTML = '<option value="">-- Pilih Peserta --</option>';
-        return;
-    }
-
-    fetch(`/rapor/peserta/${sekolahId}`)
-        .then(res => res.json())
-        .then(data => {
-            let options = '<option value="">-- Pilih Peserta --</option>';
-            data.forEach(p => {
-                options += `<option value="${p.id}">${p.nama}</option>`;
-            });
-            pesertaSelect.innerHTML = options;
-        })
-        .catch(() => {
-            pesertaSelect.innerHTML = '<option>Error memuat peserta</option>';
-        });
-}
-</script>
-

@@ -85,6 +85,12 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\AbsensiInstruktur::class, 'instruktur_id');
     }
 
+    public function raporTugas()
+    {
+        return $this->hasMany(RaporTugas::class, 'instruktur_id');
+    }
+
+
 
 
 }

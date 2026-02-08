@@ -12,22 +12,64 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pembayarans', function (Blueprint $table) {
-                $table->id();
+            $table->id();
 
-                $table->foreignId('peserta_id')->constrained()->cascadeOnDelete();
-                $table->foreignId('sekolah_id')->constrained()->cascadeOnDelete();
+            /*
+            |-------------------------------------------------
+            | IDENTITAS PESERTA
+            |-------------------------------------------------
+            | salah satu WAJIB terisi:
+            | - peserta_id (sekolah)
+            | - home_private_id (home private)
+            */
+            $table->enum('jenis_peserta', ['sekolah', 'home_private']);
+            $table->foreignId('peserta_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('home_private_id')->nullable()->constrained('home_privates')->nullOnDelete();
 
-                $table->date('tanggal_bayar')->nullable();
-                $table->integer('bulan'); // 1–12
-                $table->integer('tahun');
+            /*
+            |-------------------------------------------------
+            | SEKOLAH (KHUSUS SEKOLAH)
+            |-------------------------------------------------
+            */
+            $table->foreignId('sekolah_id')->nullable()->constrained()->nullOnDelete();
 
-                $table->decimal('jumlah', 12, 2)->nullable();
-                $table->enum('status', ['lunas', 'belum'])->default('belum');
+            /*
+            |-------------------------------------------------
+            | PERIODE PEMBAYARAN
+            |-------------------------------------------------
+            */
+            $table->integer('bulan');  // 1–12
+            $table->integer('tahun');  // 2024, 2025, dst
 
-                $table->timestamps();
+            /*
+            |-------------------------------------------------
+            | DETAIL PEMBAYARAN
+            |-------------------------------------------------
+            */
+            $table->date('tanggal_bayar')->nullable();
+            $table->integer('jumlah')->nullable(); // 150000 / 450000
+            $table->enum('status', ['lunas', 'belum'])->default('belum');
 
-                $table->unique(['peserta_id', 'bulan', 'tahun']);
+            $table->timestamps();
+
+            /*
+            |-------------------------------------------------
+            | UNIQUE KEY (AMAN)
+            |-------------------------------------------------
+            | - Sekolah: 1 peserta 1 bulan
+            | - Home private: 1 peserta home private 1 bulan
+            */
+            $table->unique(
+                ['peserta_id', 'bulan', 'tahun'],
+                'unique_pembayaran_sekolah'
+            );
+
+            $table->unique(
+                ['home_private_id', 'bulan', 'tahun'],
+                'unique_pembayaran_home_private'
+            );
         });
+
 
     }
 

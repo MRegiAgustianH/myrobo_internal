@@ -2,72 +2,100 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Materi;
 use App\Models\Kompetensi;
 use Illuminate\Http\Request;
 
 class KompetensiController extends Controller
 {
-    public function index()
+    /**
+     * Daftar kompetensi per materi
+     */
+    public function index(Materi $materi)
     {
-        $kompetensis = Kompetensi::withCount('indikatorKompetensis')
+        $kompetensis = $materi->kompetensis()
+            ->withCount('indikatorKompetensis')
             ->orderBy('nama_kompetensi')
             ->get();
 
-        return view('kompetensi.index', compact('kompetensis'));
+        return view('admin.materi.kompetensi.index', compact('materi', 'kompetensis'));
     }
 
-
-    public function create()
+    /**
+     * Simpan kompetensi (CREATE – via modal)
+     */
+    public function store(Request $request, Materi $materi)
     {
-        return view('kompetensi.create');
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nama_kompetensi' => 'required|string|max:255',
+        $validated = $request->validate([
+            'nama_kompetensi' => [
+                'required',
+                'string',
+                'max:255',
+                // unik per materi
+                'unique:kompetensis,nama_kompetensi,NULL,id,materi_id,' . $materi->id,
+            ],
         ]);
 
-        Kompetensi::create([
-            'nama_kompetensi' => $request->nama_kompetensi,
-        ]);
+        $materi->kompetensis()->create($validated);
 
         return redirect()
-            ->route('kompetensi.index')
+            ->route('materi.kompetensi.index', $materi->id)
             ->with('success', 'Kompetensi berhasil ditambahkan');
     }
 
-    public function edit(Kompetensi $kompetensi)
+    /**
+     * Update kompetensi (EDIT – via modal)
+     */
+    public function update(Request $request, Materi $materi, Kompetensi $kompetensi)
     {
-        return view('kompetensi.edit', compact('kompetensi'));
-    }
+        $this->ensureKompetensiMilikMateri($materi, $kompetensi);
 
-    public function update(Request $request, Kompetensi $kompetensi)
-    {
-        $request->validate([
-            'nama_kompetensi' => 'required|string|max:255',
+        $validated = $request->validate([
+            'nama_kompetensi' => [
+                'required',
+                'string',
+                'max:255',
+                'unique:kompetensis,nama_kompetensi,' . $kompetensi->id . ',id,materi_id,' . $materi->id,
+            ],
         ]);
 
-        $kompetensi->update([
-            'nama_kompetensi' => $request->nama_kompetensi,
-        ]);
+        $kompetensi->update($validated);
 
         return redirect()
-            ->route('kompetensi.index')
+            ->route('materi.kompetensi.index', $materi->id)
             ->with('success', 'Kompetensi berhasil diperbarui');
     }
 
-    public function destroy(Kompetensi $kompetensi)
+    /**
+     * Hapus kompetensi (DELETE – via modal)
+     */
+    public function destroy(Materi $materi, Kompetensi $kompetensi)
     {
-        // Proteksi: tidak boleh hapus jika sudah punya indikator
-        if ($kompetensi->indikatorKompetensis()->count() > 0) {
-            return back()->with('error', 'Kompetensi tidak dapat dihapus karena memiliki indikator');
+        $this->ensureKompetensiMilikMateri($materi, $kompetensi);
+
+        if ($kompetensi->indikatorKompetensis()->exists()) {
+            return back()->with(
+                'error',
+                'Kompetensi tidak dapat dihapus karena masih memiliki indikator'
+            );
         }
 
         $kompetensi->delete();
 
         return redirect()
-            ->route('kompetensi.index')
+            ->route('materi.kompetensi.index', $materi->id)
             ->with('success', 'Kompetensi berhasil dihapus');
+    }
+
+    /**
+     * Guard relasi materi → kompetensi
+     */
+    private function ensureKompetensiMilikMateri(
+        Materi $materi,
+        Kompetensi $kompetensi
+    ): void {
+        if ($kompetensi->materi_id !== $materi->id) {
+            abort(404);
+        }
     }
 }

@@ -8,7 +8,9 @@ class Pembayaran extends Model
 {
     protected $fillable = [
         'peserta_id',
+        'home_private_id',
         'sekolah_id',
+        'jenis_peserta',
         'tanggal_bayar',
         'bulan',
         'tahun',
@@ -29,6 +31,26 @@ class Pembayaran extends Model
     public function sekolah()
     {
         return $this->belongsTo(Sekolah::class);
+    }
+
+    public function homePrivate()
+    {
+        return $this->belongsTo(HomePrivate::class);
+    }
+
+    public function isSekolah()
+    {
+        return $this->jenis_peserta === 'sekolah';
+    }
+
+    public function isHomePrivate()
+    {
+        return $this->jenis_peserta === 'home_private';
+    }
+
+    public function nominal()
+    {
+        return $this->isHomePrivate() ? 450000 : 150000;
     }
 }
 

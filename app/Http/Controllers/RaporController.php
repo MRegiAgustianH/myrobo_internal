@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Rapor;
 use App\Models\NilaiRapor;
 use App\Models\Semester;
-use App\Models\Kompetensi;
+use App\Models\Materi;
 use App\Models\Peserta;
 use App\Models\Sekolah;
+use App\Models\RaporTugas;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +16,17 @@ use Illuminate\Support\Facades\DB;
 class RaporController extends Controller
 {
     /* =========================
-     * MANAJEMEN RAPOR (CARD)
+     * MANAJEMEN RAPOR (ADMIN)
      * ========================= */
     public function manajemen()
     {
-        $rapors = Rapor::with(['sekolah','peserta','semester'])
+        $rapors = Rapor::with([
+                'sekolah',
+                'peserta',
+                'semester',
+                'materiRef',
+                'tugas'
+            ])
             ->latest()
             ->get();
 
@@ -27,18 +34,22 @@ class RaporController extends Controller
     }
 
     /* =========================
-     * CREATE
+     * CREATE (sementara / legacy)
      * ========================= */
     public function create()
     {
         return view('admin.rapor.create', [
-            'sekolahs'     => Sekolah::orderBy('nama_sekolah')->get(),
-            'pesertas'    => [],
-            'semesters'   => Semester::orderBy('nama_semester')->get(),
-            'kompetensis' => Kompetensi::with('indikatorKompetensis')->get(),
+            'sekolahs'    => Sekolah::orderBy('nama_sekolah')->get(),
+            'pesertas'   => [],
+            'semesters'  => Semester::orderBy('nama_semester')->get(),
+            'materis'    => Materi::orderBy('nama_materi')->get(),
+            'kompetensis'=> [],
         ]);
     }
 
+    /* =========================
+     * AJAX: Peserta by Sekolah
+     * ========================= */
     public function pesertaBySekolah(Sekolah $sekolah)
     {
         return response()->json(
@@ -54,39 +65,29 @@ class RaporController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'sekolah_id'  => 'required|exists:sekolahs,id',
-            'peserta_id'  => 'required|exists:pesertas,id',
-            'semester_id' => 'required|exists:semesters,id',
-            'materi'      => 'required|string',
-            'nilai_akhir' => 'required|in:A,B,C',
-            'nilai'       => 'required|array',
-            'nilai.*'     => 'required|in:C,B,SB',
-            'kesimpulan'  => 'nullable|string',
+            'rapor_tugas_id' => 'required|exists:rapor_tugas,id',
+            'sekolah_id'     => 'required|exists:sekolahs,id',
+            'peserta_id'     => 'required|exists:pesertas,id',
+            'semester_id'    => 'required|exists:semesters,id',
+            'materi_id'      => 'required|exists:materis,id',
+            'materi'         => 'required|string',
+            'nilai_akhir'    => 'required|in:A,B,C',
+            'nilai'          => 'required|array',
+            'nilai.*'        => 'required|in:C,B,SB',
         ]);
-
-        $exists = Rapor::where('peserta_id', $request->peserta_id)
-            ->where('semester_id', $request->semester_id)
-            ->exists();
-
-        if ($exists) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'peserta_id' =>
-                        'Rapor untuk peserta ini pada semester tersebut sudah ada. Silakan edit rapor yang tersedia.'
-                ]);
-        }
-
 
         DB::transaction(function () use ($request) {
 
             $rapor = Rapor::create([
-                'sekolah_id'  => $request->sekolah_id,
-                'peserta_id'  => $request->peserta_id,
-                'semester_id' => $request->semester_id,
-                'materi'      => $request->materi,
-                'nilai_akhir' => $request->nilai_akhir,
-                'kesimpulan'  => $request->kesimpulan,
+                'rapor_tugas_id' => $request->rapor_tugas_id,
+                'sekolah_id'     => $request->sekolah_id,
+                'peserta_id'     => $request->peserta_id,
+                'semester_id'    => $request->semester_id,
+                'materi_id'      => $request->materi_id,
+                'materi'         => $request->materi,
+                'nilai_akhir'    => $request->nilai_akhir,
+                'kesimpulan'     => $request->kesimpulan,
+                'status'         => 'submitted',
             ]);
 
             foreach ($request->nilai as $indikatorId => $nilai) {
@@ -96,11 +97,14 @@ class RaporController extends Controller
                     'nilai'                   => $nilai,
                 ]);
             }
+
+            // Update status tugas jika perlu
+            $rapor->tugas()->update(['status' => 'in_progress']);
         });
 
         return redirect()
             ->route('rapor.manajemen')
-            ->with('success', 'Rapor berhasil ditambahkan');
+            ->with('success','Rapor berhasil ditambahkan');
     }
 
     /* =========================
@@ -113,9 +117,14 @@ class RaporController extends Controller
         return view('admin.rapor.edit', [
             'rapor'       => $rapor,
             'sekolahs'    => Sekolah::orderBy('nama_sekolah')->get(),
-            'pesertas'    => Peserta::orderBy('nama')->get(),
+            'pesertas'    => Peserta::where('sekolah_id', $rapor->sekolah_id)->get(),
             'semesters'   => Semester::orderBy('nama_semester')->get(),
-            'kompetensis' => Kompetensi::with('indikatorKompetensis')->get(),
+            'materis'     => Materi::orderBy('nama_materi')->get(),
+            'kompetensis'=> $rapor->materiRef
+                ? $rapor->materiRef->kompetensis()
+                    ->with('indikatorKompetensis')
+                    ->get()
+                : [],
         ]);
     }
 
@@ -125,28 +134,23 @@ class RaporController extends Controller
     public function update(Request $request, Rapor $rapor)
     {
         $request->validate([
-            'sekolah_id'  => 'required|exists:sekolahs,id',
-            'peserta_id'  => 'required|exists:pesertas,id',
-            'semester_id' => 'required|exists:semesters,id',
+            'materi_id'   => 'required|exists:materis,id',
             'materi'      => 'required|string',
             'nilai_akhir' => 'required|in:A,B,C',
             'nilai'       => 'required|array',
             'nilai.*'     => 'required|in:C,B,SB',
-            'kesimpulan'  => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($request, $rapor) {
 
             $rapor->update([
-                'sekolah_id'  => $request->sekolah_id,
-                'peserta_id'  => $request->peserta_id,
-                'semester_id' => $request->semester_id,
+                'materi_id'   => $request->materi_id,
                 'materi'      => $request->materi,
                 'nilai_akhir' => $request->nilai_akhir,
                 'kesimpulan'  => $request->kesimpulan,
+                'status'      => 'submitted',
             ]);
 
-            // Hapus nilai lama agar tidak dobel
             $rapor->nilai()->delete();
 
             foreach ($request->nilai as $indikatorId => $nilai) {
@@ -160,8 +164,48 @@ class RaporController extends Controller
 
         return redirect()
             ->route('rapor.manajemen')
-            ->with('success', 'Rapor berhasil diperbarui');
+            ->with('success','Rapor berhasil diperbarui');
     }
+
+    /* =========================
+     * CETAK
+     * ========================= */
+    public function cetak(Rapor $rapor)
+    {
+        $rapor->load([
+            'peserta',
+            'semester',
+            'nilai.indikatorKompetensi.kompetensi'
+        ]);
+
+        // F4 size dalam mm → [0, 0, width, height]
+        $pdf = Pdf::loadView('admin.rapor.cetak', compact('rapor'))
+            ->setPaper([0, 0, 210, 330], 'portrait');
+
+        return $pdf->stream(
+            'rapor-'.$rapor->peserta->nama.'.pdf'
+        );
+    }
+
+    public function cetakInstruktur(Rapor $rapor)
+    {
+        // pastikan rapor milik tugas instruktur ini
+        abort_if(
+            $rapor->tugas->instruktur_id !== auth()->id(),
+            403
+        );
+
+        // hanya boleh cetak jika approved
+        abort_if(
+            $rapor->status !== 'approved',
+            403,
+            'Rapor belum disetujui admin'
+        );
+
+        return $this->cetak($rapor); // reuse fungsi lama
+    }
+
+
 
     /* =========================
      * DELETE
@@ -170,23 +214,22 @@ class RaporController extends Controller
     {
         $rapor->delete();
 
-        return back()->with('success', 'Rapor berhasil dihapus');
+        return redirect()
+            ->route('rapor.manajemen')
+            ->with('success', 'Rapor berhasil dihapus');
     }
 
-    
-    public function cetak($id)
+    public function loadKompetensi(Materi $materi)
     {
-        $rapor = Rapor::with([
-            'peserta',
-            'semester',
-            'nilaiRapors.indikatorKompetensi.kompetensi'
-        ])->findOrFail($id);
+        $kompetensis = $materi->kompetensis()
+            ->with('indikatorKompetensis')
+            ->orderBy('nama_kompetensi')
+            ->get();
 
-        $pdf = Pdf::loadView('admin.rapor.cetak', compact('rapor'))
-            ->setPaper('a4', 'portrait');
-
-        return $pdf->stream('rapor-'.$rapor->peserta->nama.'.pdf');
+        return view(
+            'admin.rapor._kompetensi_indikator',
+            compact('kompetensis')
+        );
     }
-
 
 }

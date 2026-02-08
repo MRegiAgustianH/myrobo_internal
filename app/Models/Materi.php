@@ -21,4 +21,9 @@ class Materi extends Model
     {
         return $this->hasMany(MateriModul::class)->orderBy('urutan');
     }
+    
+    public function kompetensis()
+    {
+        return $this->hasMany(Kompetensi::class);
+    }
 }

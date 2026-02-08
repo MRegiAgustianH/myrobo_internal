@@ -18,31 +18,37 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            // PESERTA SEKOLAH
             $table->foreignId('peserta_id')
+                ->nullable()
                 ->constrained()
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
-            // 👉 ABSENSI HARIAN
+            // PESERTA HOME PRIVATE
+            $table->foreignId('home_private_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+
             $table->date('tanggal');
-
-            // 👉 STATUS ABSENSI
-            $table->enum('status', [
-                'hadir',
-                'izin',
-                'sakit',
-                'alfa'
-            ])->default('alfa');
-
-            $table->text('keterangan')->nullable();
+            $table->enum('status', ['hadir','izin','sakit','alfa'])->default('alfa');
+            $table->string('keterangan')->nullable();
 
             $table->timestamps();
 
-            // 👉 UNIQUE PER HARI
+            // UNIQUE UNTUK PESERTA SEKOLAH
             $table->unique(
-                ['jadwal_id', 'peserta_id', 'tanggal'],
-                'absensis_unique_per_hari'
+                ['jadwal_id', 'tanggal', 'peserta_id'],
+                'unique_absensi_peserta'
+            );
+
+            // UNIQUE UNTUK HOME PRIVATE
+            $table->unique(
+                ['jadwal_id', 'tanggal', 'home_private_id'],
+                'unique_absensi_home_private'
             );
         });
+
 
 
     }

@@ -15,12 +15,33 @@ class MateriModulController extends Controller
      */
     public function index(Materi $materi)
     {
-        $materi->load(['moduls' => function ($q) {
-            $q->orderBy('urutan');
-        }]);
+        $user = auth()->user();
 
-        return view('admin.materi.modul.index', compact('materi'));
+        // ===============================
+        // AUTHORIZATION
+        // ===============================
+        if (! $user->isAdmin() && ! $user->isInstruktur()) {
+            abort(403, 'Tidak memiliki akses');
+        }
+
+        // ===============================
+        // LOAD MODUL
+        // ===============================
+        $materi->load([
+            'moduls' => fn ($q) => $q->orderBy('urutan')
+        ]);
+
+        // ===============================
+        // FLAG VIEW MODE
+        // ===============================
+        $readonly = $user->isInstruktur();
+
+        return view('admin.materi.modul.index', compact(
+            'materi',
+            'readonly'
+        ));
     }
+
 
     /**
      * Simpan modul baru

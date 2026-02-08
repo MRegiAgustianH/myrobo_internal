@@ -146,13 +146,18 @@ Dashboard Admin
     <div class="bg-white rounded-xl shadow-sm border p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <i data-feather="grid" class="w-4 h-4"></i>
-            Manajemen Sekolah
+            Manajemen Pelatihan
         </h3>
 
         <div class="space-y-2 text-sm">
             <a href="{{ route('sekolah.index') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Kelola Sekolah</span>
+                <i data-feather="chevron-right" class="w-4 h-4"></i>
+            </a>
+            <a href="{{ route('home-private.index') }}"
+               class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
+                <span>Kelola Home Private</span>
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
             </a>
         </div>
@@ -166,7 +171,7 @@ Dashboard Admin
         </h3>
 
         <div class="space-y-2 text-sm">
-            <a href="{{ route('materi.index') }}"
+            <a href="{{ route('admin.materi.index') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Materi</span>
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
@@ -178,7 +183,7 @@ Dashboard Admin
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
             </a>
 
-            <a href="{{ route('rapor.manajemen') }}"
+            <a href="{{ route('admin.rapor-tugas.index') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Rapor</span>
                 <i data-feather="chevron-right" class="w-4 h-4"></i>

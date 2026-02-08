@@ -23,8 +23,13 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->enum('nilai', ['C', 'B', 'SB']);
+
             $table->timestamps();
+
+            // 1 indikator hanya boleh dinilai sekali per rapor
+            $table->unique(['rapor_id', 'indikator_kompetensi_id']);
         });
+
 
 
     }

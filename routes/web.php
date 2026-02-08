@@ -5,16 +5,21 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\MateriController;
 use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\AdminRaporVerifikasiController;
 use App\Http\Controllers\PesertaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SekolahController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomePrivateController;
 use App\Http\Controllers\IndikatorKompetensiController;
+use App\Http\Controllers\InstrukturRaporController;
+use App\Http\Controllers\InstrukturRaporTugasController;
 use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\MateriModulController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\RaporController;
+use App\Http\Controllers\RaporTugasController;
 use App\Models\Rapor;
 
 Route::get('/', function () {
@@ -35,17 +40,121 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/sekolah/{sekolah}/peserta', [PesertaController::class, 'bySekolah'])
     ->name('peserta.bySekolah');
 
-    Route::get('/rapor/manajemen',[RaporController::class, 'manajemen'])->name('rapor.manajemen');
-
-    Route::resource('rapor', RaporController::class)->except(['index']);
-
-    Route::resource('kompetensi.indikator',IndikatorKompetensiController::class);
-
-    Route::get('/rapor/{rapor}/cetak', [RaporController::class, 'cetak'])->name('rapor.cetak');
-
-    Route::get('/rapor/peserta/{sekolah}',[RaporController::class, 'pesertaBySekolah'])->name('rapor.peserta.bySekolah');
 
 });
+
+Route::middleware('auth')->group(function () {
+
+    // ================= AJAX LOAD KOMPETENSI & INDIKATOR =================
+    Route::get(
+        '/rapor/materi/{materi}/kompetensi',
+        [RaporController::class, 'loadKompetensi']
+    )->name('rapor.materi.kompetensi');
+
+    // ================= PESERTA BY SEKOLAH =================
+    Route::get(
+        '/rapor/peserta/{sekolah}',
+        [RaporController::class, 'pesertaBySekolah']
+    )->name('rapor.peserta.bySekolah');
+
+    // ================= RAPOR =================
+    Route::get('/rapor/manajemen',
+        [RaporController::class, 'manajemen']
+    )->name('rapor.manajemen');
+
+    Route::resource('rapor', RaporController::class)
+        ->except(['index']);
+
+    Route::get('/rapor/{rapor}/cetak',
+        [RaporController::class, 'cetak']
+    )->name('rapor.cetak');
+});
+
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+
+        Route::get('/rapor-tugas', 
+            [RaporTugasController::class, 'index']
+        )->name('admin.rapor-tugas.index');
+
+        Route::post('/rapor-tugas', 
+            [RaporTugasController::class, 'store']
+        )->name('admin.rapor-tugas.store');
+
+        Route::get('/rapor-tugas/{raporTugas}', 
+            [RaporTugasController::class, 'show']
+        )->name('admin.rapor-tugas.show');
+
+        Route::post('/rapor-tugas/{raporTugas}/verifikasi',
+            [RaporTugasController::class, 'verifikasi']
+        )->name('admin.rapor-tugas.verifikasi');
+    });
+
+    Route::prefix('instruktur')->middleware(['auth','role:instruktur'])->group(function () {
+
+        // Daftar tugas rapor
+        Route::get('/rapor-tugas',
+            [InstrukturRaporTugasController::class, 'index']
+        )->name('instruktur.rapor-tugas.index');
+
+        // Detail tugas rapor (list peserta)
+        Route::get('/rapor-tugas/{raporTugas}',
+            [InstrukturRaporTugasController::class, 'show']
+        )->name('instruktur.rapor-tugas.show');
+
+        // Form isi rapor (reuse _form.blade)
+        Route::get(
+            '/rapor-tugas/{raporTugas}/peserta/{peserta}/rapor',
+            [InstrukturRaporController::class, 'edit']
+        )->name('instruktur.rapor.edit');
+
+        // Simpan / update rapor
+        Route::post(
+            '/rapor-tugas/{raporTugas}/peserta/{peserta}/rapor',
+            [InstrukturRaporController::class, 'store']
+        )->name('instruktur.rapor.store');
+
+        // Submit rapor (ubah status ke submitted)
+        Route::post(
+            '/rapor/{rapor}/submit',
+            [InstrukturRaporController::class, 'submit']
+        )->name('instruktur.rapor.submit');
+
+        Route::get(
+            '/rapor/{rapor}/cetak',
+            [RaporController::class, 'cetakInstruktur']
+        )->name('instruktur.rapor.cetak');
+});
+
+Route::prefix('admin')
+    ->middleware(['auth','role:admin'])
+    ->group(function () {
+
+        Route::get(
+            '/rapor/{rapor}/verifikasi',
+            [AdminRaporVerifikasiController::class, 'show']
+        )->name('admin.rapor.verifikasi.show');
+
+        Route::patch(
+            '/rapor/{rapor}/verifikasi',
+            [AdminRaporVerifikasiController::class, 'approve']
+        )->name('admin.rapor.verifikasi.approve');
+
+        Route::patch(
+            '/rapor/{rapor}/revisi',
+            [AdminRaporVerifikasiController::class, 'revision']
+        )->name('admin.rapor.verifikasi.revision');
+
+        Route::patch(
+            '/admin/rapor-tugas/{raporTugas}/verifikasi-semua',
+            [AdminRaporVerifikasiController::class, 'approveAll']
+        )->name('admin.rapor.verifikasi.approveAll');
+
+
+    });
+
+
+
+
 
 Route::middleware(['auth','role:admin'])->group(function () {
 
@@ -84,13 +193,24 @@ Route::middleware(['auth','role:admin'])->group(function () {
 
 });
 
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+        Route::resource('tarif-gaji', \App\Http\Controllers\TarifGajiController::class)
+            ->except(['show']);
+            
+    });
+
+    Route::middleware(['auth', 'role:admin'])
+    ->post('tarif-gaji/quick-store',
+        [\App\Http\Controllers\TarifGajiController::class, 'quickStore']
+    )->name('tarif-gaji.quick-store');
+
 
 
 Route::middleware(['auth','role:admin'])->group(function () {
 
     Route::resource('users', UserController::class);
-    Route::resource('materi', MateriController::class)->except(['show']);
-    Route::resource('kompetensi', KompetensiController::class);
+    Route::resource('home-private', HomePrivateController::class);
 
 });
 
@@ -110,6 +230,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::delete('/jadwal/{jadwal}', [JadwalController::class, 'destroy'])
             ->name('jadwal.destroy');
+            
+        Route::post('/jadwal/recurring', [JadwalController::class, 'storeRecurring'])
+            ->name('jadwal.recurring');
     });
 });
 
@@ -120,6 +243,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/absensi/jadwal/{jadwal}', [AbsensiController::class, 'store'])
         ->name('absensi.store');
+
+    Route::post('jadwal/{jadwal}/absensi-instruktur', [\App\Http\Controllers\AbsensiInstrukturController::class, 'store'])->name('instruktur.absensi.store');
 
 });
 
@@ -161,34 +286,81 @@ Route::middleware(['auth'])->group(function () {
         ->name('pembayaran.invoice.pdf');
 });
 
-Route::middleware('auth')->group(function () {
+Route::prefix('admin')
+    ->middleware(['auth'])
+    ->group(function () {
 
-    Route::get('/materi/{materi}/modul', 
-        [MateriModulController::class, 'index']
-    )->name('materi.modul.index');
+    /* ================= MATERI ================= */
+    Route::get('materi', [MateriController::class, 'index'])
+        ->name('admin.materi.index');
 
-    Route::post('/materi/{materi}/modul', 
-        [MateriModulController::class, 'store']
-    )->name('materi.modul.store');
+    Route::post('materi', [MateriController::class, 'store'])
+        ->name('admin.materi.store');
 
-    Route::put('/materi/modul/{modul}', 
-        [MateriModulController::class, 'update']
-    )->name('materi.modul.update');
+    Route::put('materi/{materi}', [MateriController::class, 'update'])
+        ->name('admin.materi.update');
 
-    Route::delete('/materi/modul/{modul}', 
-        [MateriModulController::class, 'destroy']
-    )->name('materi.modul.destroy');
+    Route::delete('materi/{materi}', [MateriController::class, 'destroy'])
+        ->name('admin.materi.destroy');
 
-    Route::get('/materi/modul/{modul}/download', 
-        [MateriModulController::class, 'download']
-    )->name('materi.modul.download');
+    /* ================= MODUL ================= */
+    Route::get('materi/{materi}/modul', [MateriModulController::class, 'index'])
+        ->name('materi.modul.index');
 
-    Route::get('/materi/modul/{modul}/preview',
-        [MateriModulController::class, 'preview']
-    )->name('materi.modul.preview')
-    ->middleware('auth');
+    Route::post('materi/{materi}/modul', [MateriModulController::class, 'store'])
+        ->name('materi.modul.store');
+
+    Route::put('materi/modul/{modul}', [MateriModulController::class, 'update'])
+        ->name('materi.modul.update');
+
+    Route::delete('materi/modul/{modul}', [MateriModulController::class, 'destroy'])
+        ->name('materi.modul.destroy');
+
+    Route::get('materi/modul/{modul}/download', [MateriModulController::class, 'download'])
+        ->name('materi.modul.download');
+
+    Route::get('materi/modul/{modul}/preview', [MateriModulController::class, 'preview'])
+        ->name('materi.modul.preview');
+
+    /* ================= KOMPETENSI ================= */
+    Route::prefix('materi/{materi}/kompetensi')->group(function () {
+
+        Route::get('/', [KompetensiController::class, 'index'])
+            ->name('materi.kompetensi.index');
+
+        Route::post('/', [KompetensiController::class, 'store'])
+            ->name('materi.kompetensi.store');
+
+
+        Route::put('{kompetensi}', [KompetensiController::class, 'update'])
+            ->name('materi.kompetensi.update');
+
+        Route::delete('{kompetensi}', [KompetensiController::class, 'destroy'])
+            ->name('materi.kompetensi.destroy');
+
+        /* ========== INDIKATOR (NESTED PALING DALAM) ========== */
+        Route::get('{kompetensi}/indikator', [IndikatorKompetensiController::class, 'index'])
+            ->name('materi.kompetensi.indikator.index');
+
+        Route::get('{kompetensi}/indikator/create', [IndikatorKompetensiController::class, 'create'])
+            ->name('materi.kompetensi.indikator.create');
+
+        Route::post('{kompetensi}/indikator', [IndikatorKompetensiController::class, 'store'])
+            ->name('materi.kompetensi.indikator.store');
+
+        Route::get('{kompetensi}/indikator/{indikator}/edit', [IndikatorKompetensiController::class, 'edit'])
+            ->name('materi.kompetensi.indikator.edit');
+
+        Route::put('{kompetensi}/indikator/{indikator}', [IndikatorKompetensiController::class, 'update'])
+            ->name('materi.kompetensi.indikator.update');
+
+        Route::delete('{kompetensi}/indikator/{indikator}', [IndikatorKompetensiController::class, 'destroy'])
+            ->name('materi.kompetensi.indikator.destroy');
+    });
 
 });
+
+
 
 
 

@@ -50,8 +50,9 @@ Dashboard Instruktur
 
                 <p class="flex items-center gap-2">
                     <i data-feather="home" class="w-3.5 h-3.5"></i>
-                    {{ $j->sekolah->nama_sekolah }}
+                    {{ $j->sekolah?->nama_sekolah ?? 'Home Private' }}
                 </p>
+
 
                 <p class="flex items-center gap-2">
                     <i data-feather="clock" class="w-3.5 h-3.5"></i>
@@ -113,14 +114,14 @@ Dashboard Instruktur
                     </p>
                 </div>
 
-                <span
-                    class="text-xs bg-[#F6FAFB]
-                           border border-[#E3EEF0]
-                           px-3 py-1 rounded-full
-                           text-gray-700">
+                <span class="text-xs bg-[#F6FAFB]
+                    border border-[#E3EEF0]
+                    px-3 py-1 rounded-full
+                    text-gray-700">
 
-                    {{ $j->sekolah->nama_sekolah }}
+                    {{ $j->sekolah?->nama_sekolah ?? 'Home Private' }}
                 </span>
+
             </div>
         @empty
             <div

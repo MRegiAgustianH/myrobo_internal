@@ -10,6 +10,11 @@ class AbsensiInstruktur extends Model
         'instruktur_id',
         'tanggal',
         'status',
+        'keterangan',
+    ];
+
+    protected $casts = [
+        'tanggal' => 'date',
     ];
 
     public function instruktur()

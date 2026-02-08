@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Keuangan;
 use App\Models\User;
 use App\Models\AbsensiInstruktur;
+use App\Models\HomePrivate;
+use App\Models\Sekolah;
+use App\Models\TarifGaji;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -110,6 +113,7 @@ class KeuanganController extends Controller
     | HALAMAN GAJI INSTRUKTUR
     |==================================================
     */
+
     public function gajiInstruktur(Request $request)
     {
         $bulan = $request->bulan ?? now()->month;
@@ -117,16 +121,52 @@ class KeuanganController extends Controller
 
         $periode = sprintf('%04d-%02d', $tahun, $bulan);
 
-        $instrukturs = User::where('role', 'instruktur')
-            ->withCount([
-                'absensiInstrukturs as total_hadir' => function ($q) use ($bulan, $tahun) {
-                    $q->where('status', 'hadir')
-                    ->whereMonth('tanggal', $bulan)
-                    ->whereYear('tanggal', $tahun);
-                }
-            ])
-            ->get();
+        $user = auth()->user();
 
+        // ===============================
+        // QUERY INSTRUKTUR (SCOPE CABANG)
+        // ===============================
+        $instrukturQuery = User::where('role', 'instruktur');
+
+        // admin sekolah hanya lihat instruktur cabangnya
+        if ($user->isAdminSekolah()) {
+            $instrukturQuery->where('sekolah_id', $user->sekolah_id);
+        }
+
+        $instrukturs = $instrukturQuery->get()
+        ->map(function ($instruktur) use ($bulan, $tahun) {
+
+            $absensis = AbsensiInstruktur::with('jadwal')
+                ->where('instruktur_id', $instruktur->id)
+                ->where('status', 'hadir')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->get();
+
+            $totalGaji = 0;
+            $adaTarifKosong = false;
+
+            foreach ($absensis as $absen) {
+                $tarif = $absen->jadwal->tarifInstruktur();
+
+                if ($tarif === 0) {
+                    $adaTarifKosong = true;
+                }
+
+                $totalGaji += $tarif;
+            }
+
+            $instruktur->total_hadir = $absensis->count();
+            $instruktur->total_gaji  = $totalGaji;
+            $instruktur->tarif_valid = !$adaTarifKosong;
+
+            return $instruktur;
+        });
+
+
+        // ===============================
+        // CEK SUDAH DIBAYAR
+        // ===============================
         $sudahDibayarIds = Keuangan::where([
                 'tipe'        => 'keluar',
                 'kategori'    => 'Gaji Instruktur',
@@ -136,12 +176,39 @@ class KeuanganController extends Controller
             ->pluck('sumber_id')
             ->toArray();
 
+        // ===============================
+        // DATA UNTUK MODAL SET GAJI
+        // ===============================
+        // admin pusat -> semua
+        // admin sekolah -> hanya cabangnya
+        $sekolahQuery = Sekolah::orderBy('nama_sekolah');
+        $homePrivateQuery = HomePrivate::orderBy('nama_peserta');
+
+        if ($user->isAdminSekolah()) {
+            $sekolahQuery->where('id', $user->sekolah_id);
+            $homePrivateQuery->where('sekolah_id', $user->sekolah_id);
+        }
+
+        $sekolahs = $sekolahQuery->get();
+        $homePrivates = $homePrivateQuery->get();
+
+        // ===============================
+        // MAP TARIF (AUTO LOAD KE MODAL)
+        // ===============================
+        $tarifMap = TarifGaji::all()
+            ->keyBy(fn ($t) =>
+                $t->jenis_jadwal.'-'.$t->sekolah_id.'-'.$t->home_private_id
+            );
+
         return view('keuangan.gaji-instruktur', compact(
             'instrukturs',
             'bulan',
             'tahun',
             'periode',
-            'sudahDibayarIds'
+            'sudahDibayarIds',
+            'sekolahs',
+            'homePrivates',
+            'tarifMap'
         ));
     }
 
@@ -178,26 +245,36 @@ class KeuanganController extends Controller
 
         DB::transaction(function () use ($request, $periode) {
 
-            $hadir = AbsensiInstruktur::where('instruktur_id', $request->instruktur_id)
+            $absensis = AbsensiInstruktur::with('jadwal')
+                ->where('instruktur_id', $request->instruktur_id)
                 ->where('status', 'hadir')
                 ->whereMonth('tanggal', $request->bulan)
                 ->whereYear('tanggal', $request->tahun)
-                ->count();
+                ->get();
 
-            $totalGaji = $hadir * 60000;
+            $totalGaji = 0;
+            $detail = [];
+
+            foreach ($absensis as $absen) {
+                $tarif = $absen->jadwal->tarifInstruktur();
+                $totalGaji += $tarif;
+
+                $detail[] = "{$absen->jadwal->jenis_jadwal}: Rp".number_format($tarif);
+            }
 
             Keuangan::create([
                 'tanggal'     => now(),
                 'tipe'        => 'keluar',
                 'kategori'    => 'Gaji Instruktur',
                 'periode'     => $periode,
-                'deskripsi'   => "Gaji {$hadir} pertemuan ({$periode})",
+                'deskripsi'   => "Gaji {$absensis->count()} pertemuan ({$periode})",
                 'jumlah'      => $totalGaji,
                 'sekolah_id'  => auth()->user()->sekolah_id,
                 'sumber_id'   => $request->instruktur_id,
                 'sumber_type' => User::class,
             ]);
         });
+
 
         return back()->with('success', 'Gaji instruktur berhasil dibayarkan');
     }

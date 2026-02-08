@@ -14,20 +14,25 @@ return new class extends Migration
         Schema::create('rapors', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('sekolah_id')->constrained();
-            $table->foreignId('peserta_id')->constrained();
-            $table->foreignId('semester_id')->constrained();
+            $table->foreignId('rapor_tugas_id')->constrained()->cascadeOnDelete();
 
-            $table->string('nilai_akhir');  
-            $table->text('materi');
+            $table->foreignId('sekolah_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('peserta_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('semester_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('materi_id')->nullable()->constrained()->nullOnDelete();
+
+            $table->text('materi')->nullable();
+            $table->string('nilai_akhir', 2)->nullable();
             $table->text('kesimpulan')->nullable();
+
+            $table->enum('status', ['draft','submitted','revision','approved'])
+                ->default('draft');
+            $table->string('catatan_revisi')->nullable();
 
             $table->timestamps();
 
-            $table->unique(['peserta_id', 'semester_id']);
+            $table->unique(['rapor_tugas_id', 'peserta_id']);
         });
-
-
 
     }
 

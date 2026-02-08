@@ -9,7 +9,7 @@ Modul Materi – {{ $materi->nama_materi }}
 {{-- ACTION BAR --}}
 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
     <div>
-        <a href="{{ route('materi.index') }}"
+        <a href="{{ route('admin.materi.index') }}"
            class="text-sm text-gray-600 hover:underline">
             ← Kembali ke Materi
         </a>

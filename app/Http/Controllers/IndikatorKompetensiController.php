@@ -2,28 +2,53 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Materi;
 use App\Models\Kompetensi;
 use App\Models\IndikatorKompetensi;
 use Illuminate\Http\Request;
 
 class IndikatorKompetensiController extends Controller
 {
-    public function index(Kompetensi $kompetensi)
+    /**
+     * Daftar indikator kompetensi
+     */
+    public function index(Materi $materi, Kompetensi $kompetensi)
     {
+        $this->ensureRelation($materi, $kompetensi);
+
         $indikators = $kompetensi->indikatorKompetensis()
             ->orderBy('nama_indikator')
             ->get();
 
-        return view('indikator.index', compact('kompetensi', 'indikators'));
+        return view(
+            'admin.materi.kompetensi.indikator.index',
+            compact('materi', 'kompetensi', 'indikators')
+        );
     }
 
-    public function create(Kompetensi $kompetensi)
+    /**
+     * Form tambah indikator
+     */
+    public function create(Materi $materi, Kompetensi $kompetensi)
     {
-        return view('indikator.create', compact('kompetensi'));
+        $this->ensureRelation($materi, $kompetensi);
+
+        return view(
+            'admin.materi.kompetensi.indikator.create',
+            compact('materi', 'kompetensi')
+        );
     }
 
-    public function store(Request $request, Kompetensi $kompetensi)
-    {
+    /**
+     * Simpan indikator
+     */
+    public function store(
+        Request $request,
+        Materi $materi,
+        Kompetensi $kompetensi
+    ) {
+        $this->ensureRelation($materi, $kompetensi);
+
         $request->validate([
             'nama_indikator' => 'required|string|max:255',
         ]);
@@ -33,20 +58,42 @@ class IndikatorKompetensiController extends Controller
         ]);
 
         return redirect()
-            ->route('kompetensi.indikator.index', $kompetensi->id)
+            ->route(
+                'materi.kompetensi.indikator.index',
+                [$materi->id, $kompetensi->id]
+            )
             ->with('success', 'Indikator berhasil ditambahkan');
     }
 
-    public function edit(Kompetensi $kompetensi, IndikatorKompetensi $indikator)
-    {
-        return view('indikator.edit', compact('kompetensi', 'indikator'));
-    }
-
-    public function update(
-        Request $request,
+    /**
+     * Form edit indikator
+     */
+    public function edit(
+        Materi $materi,
         Kompetensi $kompetensi,
         IndikatorKompetensi $indikator
     ) {
+        $this->ensureRelation($materi, $kompetensi);
+        $this->ensureIndicator($kompetensi, $indikator);
+
+        return view(
+            'admin.materi.kompetensi.indikator.edit',
+            compact('materi', 'kompetensi', 'indikator')
+        );
+    }
+
+    /**
+     * Update indikator
+     */
+    public function update(
+        Request $request,
+        Materi $materi,
+        Kompetensi $kompetensi,
+        IndikatorKompetensi $indikator
+    ) {
+        $this->ensureRelation($materi, $kompetensi);
+        $this->ensureIndicator($kompetensi, $indikator);
+
         $request->validate([
             'nama_indikator' => 'required|string|max:255',
         ]);
@@ -56,14 +103,21 @@ class IndikatorKompetensiController extends Controller
         ]);
 
         return redirect()
-            ->route('kompetensi.indikator.index', $kompetensi->id)
+            ->route(
+                'materi.kompetensi.indikator.index',
+                [$materi->id, $kompetensi->id]
+            )
             ->with('success', 'Indikator berhasil diperbarui');
     }
 
-    public function destroy(Kompetensi $kompetensi, IndikatorKompetensi $indikator)
-    {
-        // Proteksi: indikator sudah dipakai rapor
-        if ($indikator->raporNilais()->count() > 0) {
+    /**
+     * Hapus indikator
+     */
+    public function destroy(Materi $materi,Kompetensi $kompetensi,IndikatorKompetensi $indikator) {
+        $this->ensureRelation($materi, $kompetensi);
+        $this->ensureIndicator($kompetensi, $indikator);
+
+        if ($indikator->raporNilais()->exists()) {
             return back()->with(
                 'error',
                 'Indikator tidak dapat dihapus karena sudah digunakan pada rapor'
@@ -73,9 +127,32 @@ class IndikatorKompetensiController extends Controller
         $indikator->delete();
 
         return redirect()
-            ->route('kompetensi.indikator.index', $kompetensi->id)
+            ->route(
+                'materi.kompetensi.indikator.index',
+                [$materi->id, $kompetensi->id]
+            )
             ->with('success', 'Indikator berhasil dihapus');
     }
+
+    /**
+     * Pastikan kompetensi milik materi
+     */
+    private function ensureRelation(Materi $materi, Kompetensi $kompetensi): void
+    {
+        if ($kompetensi->materi_id !== $materi->id) {
+            abort(404);
+        }
+    }
+
+    /**
+     * Pastikan indikator milik kompetensi
+     */
+    private function ensureIndicator(
+        Kompetensi $kompetensi,
+        IndikatorKompetensi $indikator
+    ): void {
+        if ($indikator->kompetensi_id !== $kompetensi->id) {
+            abort(404);
+        }
+    }
 }
-
-

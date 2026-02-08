@@ -10,6 +10,7 @@ use App\Models\Peserta;
 use App\Models\Sekolah;
 use App\Models\Pembayaran;
 use App\Models\Keuangan;
+use App\Models\RaporTugas;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -20,24 +21,19 @@ class DashboardController extends Controller
         $bulan = now()->month;
         $tahun = now()->year;
 
-        /*
-        |==================================================
-        | ADMIN SISTEM
-        |==================================================
-        */
+        /* ==================================================
+         | ADMIN SISTEM
+         |================================================== */
         if ($user->role === 'admin') {
 
-            // ===== MASTER DATA =====
             $totalSekolah    = Sekolah::count();
             $totalPeserta    = Peserta::count();
             $totalInstruktur = User::where('role', 'instruktur')->count();
             $totalJadwal     = Jadwal::count();
 
-            // ===== PEMBAYARAN =====
             $pembayaranBelum = Pembayaran::where('status', 'belum')->count();
             $pembayaranLunas = Pembayaran::where('status', 'lunas')->count();
 
-            // ===== KEUANGAN BULAN INI =====
             $uangMasuk = Keuangan::where('tipe', 'masuk')
                 ->whereMonth('tanggal', $bulan)
                 ->whereYear('tanggal', $tahun)
@@ -65,27 +61,21 @@ class DashboardController extends Controller
             ));
         }
 
-        /*
-        |==================================================
-        | ADMIN SEKOLAH
-        |==================================================
-        */
+        /* ==================================================
+         | ADMIN SEKOLAH
+         |================================================== */
         if ($user->role === 'admin_sekolah') {
 
-            // ===== ABSENSI =====
             $rekapAbsensi = Absensi::whereHas('jadwal', function ($q) use ($user) {
-                    $q->where('sekolah_id', $user->sekolah_id);
-                })
-                ->count();
+                $q->where('sekolah_id', $user->sekolah_id);
+            })->count();
 
-            // ===== PEMBAYARAN SEKOLAH =====
             $totalPembayaran = Pembayaran::where('sekolah_id', $user->sekolah_id)
                 ->where('status', 'lunas')
                 ->where('bulan', $bulan)
                 ->where('tahun', $tahun)
                 ->sum('jumlah');
 
-            // ===== KEUANGAN SEKOLAH =====
             $uangMasuk = Keuangan::where('tipe', 'masuk')
                 ->where('sekolah_id', $user->sekolah_id)
                 ->whereMonth('tanggal', $bulan)
@@ -111,38 +101,51 @@ class DashboardController extends Controller
             ));
         }
 
-        /*
-        |==================================================
-        | INSTRUKTUR
-        |==================================================
-        */
+        /* ==================================================
+         | INSTRUKTUR
+         |================================================== */
         if ($user->role === 'instruktur') {
 
+            $today = Carbon::today();
+
             $jadwalsHariIni = $user->jadwals()
-                ->whereDate('tanggal_mulai', Carbon::today())
+                ->whereDate('tanggal_mulai', $today)
                 ->with('sekolah')
+                ->orderBy('jam_mulai')
                 ->get();
 
             $jadwalsMingguan = $user->jadwals()
                 ->whereBetween('tanggal_mulai', [
-                    Carbon::today(),
-                    Carbon::today()->addDays(7)
+                    $today,
+                    $today->copy()->addDays(7)
                 ])
                 ->with('sekolah')
                 ->orderBy('tanggal_mulai')
                 ->get();
 
+            // ===== TUGAS RAPOR =====
+            $tugasRapors = RaporTugas::with(['sekolah', 'semester'])
+                ->withCount([
+                    'rapors',
+                    'rapors as rapors_selesai_count' => function ($q) {
+                        $q->whereIn('status', ['submitted', 'approved']);
+                    }
+                ])
+                ->where('instruktur_id', $user->id)
+                ->whereIn('status', ['pending', 'in_progress'])
+                ->orderBy('deadline')
+                ->get();
+
             return view('dashboard-instruktur', compact(
                 'jadwalsHariIni',
-                'jadwalsMingguan'
+                'jadwalsMingguan',
+                'tugasRapors'
             ));
         }
 
-        /*
-        |==================================================
-        | ROLE TIDAK VALID
-        |==================================================
-        */
+        /* ==================================================
+         | ROLE TIDAK VALID
+         |================================================== */
         abort(403);
     }
 }

@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('jadwals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sekolah_id')->constrained()->cascadeOnDelete();
+            $table->enum('jenis_jadwal', ['sekolah', 'home_private'])->default('sekolah');
+            $table->foreignId('sekolah_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('home_private_id')->nullable()->constrained('home_privates')->nullOnDelete();
             $table->string('nama_kegiatan');
             $table->enum('hari',['senin','selasa','rabu','kamis','jumat','sabtu','minggu']);
             $table->time('jam_mulai');

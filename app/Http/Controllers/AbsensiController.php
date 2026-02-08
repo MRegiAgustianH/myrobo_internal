@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Jadwal;
 use App\Models\Absensi;
 use App\Models\AbsensiInstruktur;
+use App\Models\HomePrivate;
 use App\Models\Keuangan;
 use App\Models\Peserta;
+use App\Models\PesertaHomePrivate;
 use App\Models\Sekolah;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,70 +18,135 @@ use Illuminate\Support\Facades\DB;
 class AbsensiController extends Controller
 {
     //
-    public function index(Jadwal $jadwal)
-    {
-        // hanya instruktur terkait atau admin
-        if (
-            auth()->user()->role === 'instruktur' &&
-            !$jadwal->instrukturs->contains(auth()->id())
-        ) {
-            abort(403);
-        }
+   public function index(Jadwal $jadwal)
+{
+    // ===============================
+    // AUTH GUARD
+    // ===============================
+    if (
+        auth()->user()->role === 'instruktur' &&
+        !$jadwal->instrukturs->contains(auth()->id())
+    ) {
+        abort(403);
+    }
+
+    // ===============================
+    // SEKOLAH
+    // ===============================
+    if ($jadwal->jenis_jadwal === 'sekolah') {
 
         $pesertas = Peserta::where('sekolah_id', $jadwal->sekolah_id)
             ->where('status', 'aktif')
             ->get();
 
         $absensiMap = Absensi::where('jadwal_id', $jadwal->id)
+            ->whereNotNull('peserta_id')
             ->get()
             ->keyBy('peserta_id');
 
-        return view('absensi.index', compact(
-            'jadwal',
-            'pesertas',
-            'absensiMap'
-        ));
+    }
+    // ===============================
+    // HOME PRIVATE (1 HOME = 1 PESERTA)
+    // ===============================
+    else {
+
+        $pesertas = HomePrivate::where('id', $jadwal->home_private_id)->get();
+
+        $absensiMap = Absensi::where('jadwal_id', $jadwal->id)
+            ->whereNotNull('home_private_id')
+            ->get()
+            ->keyBy('home_private_id');
     }
 
-        public function store(Request $request, Jadwal $jadwal)
-    {
-        DB::transaction(function () use ($request, $jadwal) {
+    // ===============================
+    // ABSENSI INSTRUKTUR (JIKA INSTRUKTUR)
+    // ===============================
+    $absensiInstruktur = null;
 
-            $tanggalAbsensi = $jadwal->tanggal_mulai;
+    if (auth()->user()->isInstruktur()) {
+        $absensiInstruktur = AbsensiInstruktur::where('jadwal_id', $jadwal->id)
+            ->where('instruktur_id', auth()->id())
+            ->whereDate('tanggal', $jadwal->tanggal_mulai)
+            ->first();
+    }
 
-            foreach ($request->absensi ?? [] as $pesertaId => $data) {
+    return view('absensi.index', compact(
+        'jadwal',
+        'pesertas',
+        'absensiMap',
+        'absensiInstruktur'
+    ));
+
+}
+
+
+
+
+
+    public function store(Request $request, Jadwal $jadwal)
+{
+
+        // ===============================
+        // BATAS WAKTU ABSENSI
+        // ===============================
+        if (
+            auth()->user()->isInstruktur() &&
+            !$jadwal->isDalamJamAbsensi()
+        ) {
+            return back()->with('error', 'Absensi hanya bisa diisi saat jam pelajaran.');
+        }
+    DB::transaction(function () use ($request, $jadwal) {
+        
+
+        $tanggal = $jadwal->tanggal_mulai;
+
+        foreach ($request->absensi ?? [] as $key => $data) {
+
+            $status = $data['status'] ?? 'alfa';
+
+            // ===============================
+            // SEKOLAH
+            // ===============================
+            if ($jadwal->jenis_jadwal === 'sekolah') {
+
                 Absensi::updateOrCreate(
                     [
                         'jadwal_id'  => $jadwal->id,
-                        'peserta_id' => $pesertaId,
-                        'tanggal'    => $tanggalAbsensi,
+                        'peserta_id' => $key,
+                        'tanggal'    => $tanggal,
                     ],
                     [
-                        'status'     => $data['status'] ?? 'alfa',
-                        'keterangan' => $data['keterangan'] ?? null,
+                        'status'           => $status,
+                        'keterangan'       => $data['keterangan'] ?? null,
+                        'home_private_id'  => null,
+                    ]
+                );
+
+            }
+            // ===============================
+            // HOME PRIVATE
+            // ===============================
+            else {
+
+                Absensi::updateOrCreate(
+                    [
+                        'jadwal_id'       => $jadwal->id,
+                        'home_private_id' => $key,
+                        'tanggal'         => $tanggal,
+                    ],
+                    [
+                        'status'       => $status,
+                        'keterangan'   => $data['keterangan'] ?? null,
+                        'peserta_id'   => null,
                     ]
                 );
             }
+        }
+    });
 
-            // ===============================
-            // ABSENSI INSTRUKTUR (BARU)
-            // ===============================
-            foreach ($jadwal->instrukturs as $instruktur) {
-                AbsensiInstruktur::updateOrCreate(
-                    [
-                        'jadwal_id'     => $jadwal->id,
-                        'instruktur_id'=> $instruktur->id,
-                        'tanggal'      => $tanggalAbsensi,
-                    ],
-                    [
-                        'status' => 'hadir',
-                    ]
-                );
-            }
-        });
+    return back()->with('success', 'Absensi peserta berhasil disimpan');
+}
 
-        return back()->with('success', 'Absensi peserta & instruktur berhasil disimpan');
-    }
 
 
     public function rekapFilter(Request $request)
@@ -90,61 +157,73 @@ class AbsensiController extends Controller
         // DATA SEKOLAH UNTUK FILTER
         // ===============================
         if ($user->isAdmin()) {
-            // admin → semua sekolah
             $sekolahs = Sekolah::orderBy('nama_sekolah')->get();
+            $sekolahId = $request->sekolah_id;
         } else {
-            // admin_sekolah → hanya sekolahnya sendiri
+            // admin sekolah → terkunci
             $sekolahs = Sekolah::where('id', $user->sekolah_id)->get();
+            $sekolahId = $user->sekolah_id;
         }
 
         // ===============================
-        // QUERY DASAR
+        // QUERY DASAR ABSENSI
         // ===============================
         $query = Absensi::with([
-            'peserta',
-            'jadwal.sekolah'
+            'peserta',        // peserta sekolah
+            'homePrivate',    // peserta home private
+            'jadwal.sekolah',
         ]);
 
         // ===============================
-        // FILTER SEKOLAH (WAJIB UNTUK ADMIN SEKOLAH)
+        // FILTER JENIS PESERTA
         // ===============================
-        if ($user->isAdminSekolah()) {
-            // PAKSA sekolah sesuai user
-            $query->whereHas('jadwal', function ($q) use ($user) {
-                $q->where('sekolah_id', $user->sekolah_id);
-            });
-        } elseif ($request->filled('sekolah_id')) {
-            // admin bebas memilih sekolah
-            $query->whereHas('jadwal', function ($q) use ($request) {
-                $q->where('sekolah_id', $request->sekolah_id);
+        if ($request->filled('jenis_peserta')) {
+
+            if ($request->jenis_peserta === 'sekolah') {
+                $query->whereNotNull('peserta_id');
+            }
+
+            if ($request->jenis_peserta === 'home_private') {
+                $query->whereNotNull('home_private_id');
+            }
+        }
+
+        // ===============================
+        // FILTER SEKOLAH
+        // ===============================
+        if ($sekolahId) {
+            $query->whereHas('jadwal', function ($q) use ($sekolahId) {
+                $q->where('sekolah_id', $sekolahId);
             });
         }
 
         // ===============================
-        // FILTER TANGGAL (BERDASARKAN TANGGAL JADWAL)
+        // FILTER TANGGAL ABSENSI
         // ===============================
         if ($request->filled('tanggal_mulai') && $request->filled('tanggal_selesai')) {
-            $query->whereHas('jadwal', function ($q) use ($request) {
-                $q->whereBetween('tanggal_mulai', [
-                    $request->tanggal_mulai,
-                    $request->tanggal_selesai
-                ]);
-            });
+            $query->whereBetween('tanggal', [
+                $request->tanggal_mulai,
+                $request->tanggal_selesai,
+            ]);
         }
 
         // ===============================
-        // AMBIL DATA
+        // SORTING AMAN
         // ===============================
         $absensis = $query
+            ->orderBy('tanggal')
             ->orderBy('jadwal_id')
-            ->orderBy('peserta_id')
+            ->orderByRaw('COALESCE(peserta_id, home_private_id)')
             ->get();
 
         return view('absensi.rekap-filter', compact(
             'sekolahs',
-            'absensis'
+            'absensis',
+            'sekolahId'
         ));
     }
+
+
 
 
     public function exportRekapPdf(Request $request)
@@ -175,31 +254,5 @@ class AbsensiController extends Controller
             'tanggal_selesai' => $tanggalSelesai,
         ])->stream('rekap-absensi.pdf');
     }
-
-    public function bayarGaji(Request $request)
-    {
-        $instruktur = User::findOrFail($request->instruktur_id);
-
-        $hadir = AbsensiInstruktur::where('instruktur_id', $instruktur->id)
-            ->where('status', 'hadir')
-            ->whereMonth('tanggal', $request->bulan)
-            ->whereYear('tanggal', $request->tahun)
-            ->count();
-
-        $totalGaji = $hadir * 60000;
-
-        Keuangan::create([
-            'tanggal'    => now(),
-            'tipe'       => 'keluar',
-            'kategori'   => 'Gaji Instruktur',
-            'deskripsi'  => "Gaji {$instruktur->name} ({$hadir} pertemuan)",
-            'jumlah'     => $totalGaji,
-            'sekolah_id' => $instruktur->sekolah_id,
-        ]);
-
-        return back()->with('success', 'Gaji instruktur berhasil dibayarkan');
-    }
-
-
 
 }

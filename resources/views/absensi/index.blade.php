@@ -1,141 +1,213 @@
 @extends('layouts.app')
 
+@php
+    $bolehAbsen =
+        auth()->user()->isAdmin()
+        || auth()->user()->isAdminSekolah()
+        || (auth()->user()->isInstruktur() && $jadwal->isDalamJamAbsensi());
+@endphp
+
 @section('header')
-Absensi – {{ $jadwal->sekolah->nama_sekolah }} / {{ $jadwal->tanggal_mulai }}
+Absensi –
+{{ $jadwal->jenis_jadwal === 'sekolah'
+    ? $jadwal->sekolah->nama_sekolah
+    : $jadwal->homePrivate->nama_kegiatan
+}}
+/ {{ $jadwal->tanggal_mulai }}
 @endsection
 
 @section('content')
 
+{{-- ================= FLASH MESSAGE ================= --}}
 @if(session('success'))
-<div class="mb-4 p-3 rounded-xl bg-green-100 text-green-700 border border-green-200 text-sm">
+<div class="mb-4 p-3 rounded-xl bg-green-100 text-green-700 border text-sm">
     {{ session('success') }}
 </div>
 @endif
 
+@if(session('error'))
+<div class="mb-4 p-3 rounded-xl bg-red-100 text-red-700 border text-sm">
+    {{ session('error') }}
+</div>
+@endif
 
-<form action="{{ route('absensi.store', $jadwal->id) }}" method="POST">
+{{-- ================================================= --}}
+{{-- ABSENSI INSTRUKTUR --}}
+{{-- ================================================= --}}
+@if(auth()->user()->isInstruktur())
+<form
+    action="{{ route('instruktur.absensi.store', $jadwal) }}"
+    method="POST"
+    class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl"
+>
 @csrf
 
+<h3 class="font-semibold mb-3">Absensi Instruktur</h3>
 
+@if(!empty($absensiInstruktur))
+    <p class="text-sm text-gray-600 mb-2">
+        Status saat ini:
+        <strong class="capitalize">{{ $absensiInstruktur->status }}</strong>
+    </p>
+@endif
+
+<div class="flex flex-wrap gap-4 mb-3">
+@foreach(['hadir','sakit','izin','alfa'] as $status)
+<label class="flex items-center gap-2">
+    <input
+        type="radio"
+        name="status"
+        value="{{ $status }}"
+        {{ !$bolehAbsen ? 'disabled' : '' }}
+        {{ $absensiInstruktur?->status === $status ? 'checked' : '' }}
+        required
+    >
+    <span class="capitalize">{{ $status }}</span>
+</label>
+@endforeach
+</div>
+
+<textarea
+    name="keterangan"
+    class="w-full border rounded-lg px-3 py-2 text-sm"
+    placeholder="Keterangan (opsional)"
+    {{ !$bolehAbsen ? 'disabled' : '' }}
+>{{ $absensiInstruktur->keterangan ?? '' }}</textarea>
+
+@if($bolehAbsen)
+<button
+    type="submit"
+    class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg"
+>
+    Simpan Absensi Instruktur
+</button>
+@else
+<div class="mt-2 text-sm text-red-600">
+    Absensi instruktur terkunci. Hanya dapat diedit oleh admin.
+</div>
+@endif
+</form>
+@endif
+
+{{-- ================================================= --}}
+{{-- ABSENSI PESERTA --}}
+{{-- ================================================= --}}
+<form action="{{ route('absensi.store', $jadwal) }}" method="POST">
+@csrf
+
+{{-- ================= MOBILE ================= --}}
 <div class="space-y-4 md:hidden">
 @foreach($pesertas as $p)
-@php $absen = $absensiMap[$p->id] ?? null; @endphp
+@php
+    $key = $p->id;
+    $absen = $absensiMap[$key] ?? null;
+    $namaPeserta = $jadwal->jenis_jadwal === 'sekolah'
+        ? $p->nama
+        : $p->nama_peserta;
+@endphp
 
-<div class="bg-white border border-[#E3EEF0] rounded-2xl p-4 shadow-sm">
-    <div class="font-semibold text-gray-800 mb-3">
-        {{ $p->nama }}
-    </div>
+<div class="bg-white border rounded-2xl p-4 shadow-sm">
+<input type="hidden" name="absensi[{{ $key }}][__present]" value="1">
 
-    <div class="grid grid-cols-2 gap-3 text-sm mb-3">
-        @foreach(['hadir','sakit','izin','alfa'] as $status)
-        <label class="flex items-center gap-2">
-            <input type="checkbox"
-                name="absensi[{{ $p->id }}][status]"
-                value="{{ $status }}"
-                data-peserta="{{ $p->id }}"
-                class="status-checkbox w-5 h-5 rounded
-                       border-gray-300 text-[#8FBFC2]
-                       focus:ring-[#8FBFC2]"
-                {{ $absen?->status === $status ? 'checked' : '' }}>
-            <span class="capitalize">{{ $status }}</span>
-        </label>
-        @endforeach
-    </div>
+<div class="font-semibold mb-3">{{ $namaPeserta }}</div>
 
-    <input type="text"
-        name="absensi[{{ $p->id }}][keterangan]"
-        value="{{ $absen->keterangan ?? '' }}"
-        placeholder="Keterangan (opsional)"
-        class="w-full border border-[#E3EEF0]
-               rounded-lg px-3 py-2 text-sm
-               focus:ring-2 focus:ring-[#8FBFC2]/60
-               focus:border-[#8FBFC2]">
+<div class="grid grid-cols-2 gap-3 mb-3">
+@foreach(['hadir','sakit','izin','alfa'] as $status)
+<label class="flex items-center gap-2">
+<input
+    type="radio"
+    name="absensi[{{ $key }}][status]"
+    value="{{ $status }}"
+    {{ !$bolehAbsen ? 'disabled' : '' }}
+    {{ $absen?->status === $status ? 'checked' : '' }}
+>
+<span class="capitalize">{{ $status }}</span>
+</label>
+@endforeach
+</div>
+
+<input
+    type="text"
+    name="absensi[{{ $key }}][keterangan]"
+    value="{{ $absen->keterangan ?? '' }}"
+    placeholder="Keterangan"
+    class="w-full border rounded-lg px-3 py-2 text-sm"
+    {{ !$bolehAbsen ? 'disabled' : '' }}
+>
 </div>
 @endforeach
 </div>
-<div class="hidden md:block bg-white border border-[#E3EEF0]
-            rounded-2xl shadow-sm overflow-x-auto">
 
+{{-- ================= DESKTOP ================= --}}
+<div class="hidden md:block bg-white border rounded-2xl shadow-sm mt-4 overflow-x-auto">
 <table class="min-w-full text-sm">
-<thead class="bg-[#F6FAFB] border-b border-[#E3EEF0]">
-<tr class="text-gray-600">
-    <th class="px-4 py-3 w-12 text-left">No</th>
-    <th class="px-4 py-3 text-left">Nama Peserta</th>
-    <th class="px-4 py-3 text-center">Hadir</th>
-    <th class="px-4 py-3 text-center">Sakit</th>
-    <th class="px-4 py-3 text-center">Izin</th>
-    <th class="px-4 py-3 text-center">Alfa</th>
-    <th class="px-4 py-3 text-left">Keterangan</th>
+<thead>
+<tr class="bg-gray-50">
+    <th class="px-3 py-2">No</th>
+    <th class="px-3 py-2 text-left">Nama Peserta</th>
+    <th class="px-3 py-2 text-center">H</th>
+    <th class="px-3 py-2 text-center">S</th>
+    <th class="px-3 py-2 text-center">I</th>
+    <th class="px-3 py-2 text-center">A</th>
+    <th class="px-3 py-2 text-left">Keterangan</th>
 </tr>
 </thead>
-
-<tbody class="divide-y divide-[#E3EEF0]">
+<tbody>
 @foreach($pesertas as $i => $p)
-@php $absen = $absensiMap[$p->id] ?? null; @endphp
+@php
+    $key = $p->id;
+    $absen = $absensiMap[$key] ?? null;
+    $namaPeserta = $jadwal->jenis_jadwal === 'sekolah'
+        ? $p->nama
+        : $p->nama_peserta;
+@endphp
+<tr class="border-t">
+<input type="hidden" name="absensi[{{ $key }}][__present]" value="1">
 
-<tr class="hover:bg-[#F6FAFB] transition">
-    <td class="px-4 py-2">{{ $i + 1 }}</td>
-    <td class="px-4 py-2 font-medium text-gray-800">{{ $p->nama }}</td>
+<td class="px-3 py-2">{{ $i + 1 }}</td>
+<td class="px-3 py-2 font-medium">{{ $namaPeserta }}</td>
 
-    @foreach(['hadir','sakit','izin','alfa'] as $status)
-    <td class="text-center">
-        <input type="checkbox"
-            name="absensi[{{ $p->id }}][status]"
-            value="{{ $status }}"
-            data-peserta="{{ $p->id }}"
-            class="status-checkbox rounded border-gray-300
-                   text-[#8FBFC2] focus:ring-[#8FBFC2]"
-            {{ $absen?->status === $status ? 'checked' : '' }}>
-    </td>
-    @endforeach
+@foreach(['hadir','sakit','izin','alfa'] as $status)
+<td class="text-center">
+<input
+    type="radio"
+    name="absensi[{{ $key }}][status]"
+    value="{{ $status }}"
+    {{ !$bolehAbsen ? 'disabled' : '' }}
+    {{ $absen?->status === $status ? 'checked' : '' }}
+>
+</td>
+@endforeach
 
-    <td class="px-4 py-2">
-        <input type="text"
-            name="absensi[{{ $p->id }}][keterangan]"
-            value="{{ $absen->keterangan ?? '' }}"
-            class="w-full border border-[#E3EEF0]
-                   rounded-lg px-3 py-1.5 text-sm">
-    </td>
+<td class="px-3 py-2">
+<input
+    type="text"
+    name="absensi[{{ $key }}][keterangan]"
+    value="{{ $absen->keterangan ?? '' }}"
+    class="w-full border rounded px-2 py-1 text-sm"
+    {{ !$bolehAbsen ? 'disabled' : '' }}
+>
+</td>
 </tr>
 @endforeach
 </tbody>
 </table>
 </div>
 
-
+@if($bolehAbsen)
 <div class="mt-6">
-    <button
-        class="w-full md:w-auto
-               inline-flex justify-center items-center gap-2
-               bg-gradient-to-r from-[#8FBFC2] to-[#7AAEB1]
-               hover:from-[#7AAEB1] hover:to-[#6FA9AD]
-               text-gray-900 font-semibold
-               px-6 py-3 rounded-xl
-               shadow-sm transition">
-        <i data-feather="save" class="w-4 h-4"></i>
-        Simpan Absensi
-    </button>
+<button
+    type="submit"
+    class="px-6 py-3 bg-[#8FBFC2] rounded-xl font-semibold text-gray-900"
+>
+    Simpan Absensi Peserta
+</button>
 </div>
+@else
+<div class="mt-4 text-sm text-red-600">
+    Absensi peserta terkunci. Hanya dapat diedit oleh admin.
+</div>
+@endif
+
 </form>
-
-
-</form>
-
-{{-- SCRIPT EKSKLUSIF CHECKBOX (TETAP) --}}
-<script>
-document.querySelectorAll('.status-checkbox').forEach(cb => {
-    cb.addEventListener('change', function () {
-        const pesertaId = this.dataset.peserta;
-        if (this.checked) {
-            document
-                .querySelectorAll(`.status-checkbox[data-peserta="${pesertaId}"]`)
-                .forEach(other => {
-                    if (other !== this) other.checked = false;
-                });
-        }
-    });
-});
-</script>
-
-
 @endsection

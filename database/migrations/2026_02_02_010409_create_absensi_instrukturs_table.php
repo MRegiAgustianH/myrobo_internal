@@ -13,14 +13,30 @@ return new class extends Migration
     {
         Schema::create('absensi_instrukturs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('jadwal_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('instruktur_id')->constrained('users')->cascadeOnDelete();
+
+            $table->foreignId('jadwal_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->foreignId('instruktur_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
             $table->date('tanggal');
-            $table->enum('status', ['hadir', 'izin', 'alfa'])->default('alfa');
+
+            $table->enum('status', ['hadir', 'izin', 'sakit', 'alfa'])
+                ->default('alfa');
+
+            $table->string('keterangan')->nullable();
+
             $table->timestamps();
 
-            $table->unique(['jadwal_id', 'instruktur_id', 'tanggal']);
+            $table->unique(
+                ['jadwal_id', 'instruktur_id', 'tanggal'],
+                'unique_absensi_instruktur'
+            );
         });
+
 
     }
 
