@@ -156,7 +156,7 @@ class AbsensiController extends Controller
         // ===============================
         // DATA SEKOLAH UNTUK FILTER
         // ===============================
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->role === 'sekretaris') {
             $sekolahs = Sekolah::orderBy('nama_sekolah')->get();
             $sekolahId = $request->sekolah_id;
         } else {
@@ -166,13 +166,22 @@ class AbsensiController extends Controller
         }
 
         // ===============================
-        // QUERY DASAR ABSENSI
+        // QUERY DASAR ABSENSI PESERTA
         // ===============================
-        $query = Absensi::with([
+        $queryPeserta = Absensi::with([
             'peserta',        // peserta sekolah
             'homePrivate',    // peserta home private
             'jadwal.sekolah',
         ]);
+
+        // ===============================
+        // QUERY DASAR ABSENSI INSTRUKTUR
+        // ===============================
+        $queryInstruktur = AbsensiInstruktur::with([
+            'instruktur',
+            'jadwal.sekolah'
+        ]);
+
 
         // ===============================
         // FILTER JENIS PESERTA
@@ -180,11 +189,19 @@ class AbsensiController extends Controller
         if ($request->filled('jenis_peserta')) {
 
             if ($request->jenis_peserta === 'sekolah') {
-                $query->whereNotNull('peserta_id');
+                $queryPeserta->whereNotNull('peserta_id');
+                // Untuk instruktur, filter berdasarkan jenis jadwal
+                $queryInstruktur->whereHas('jadwal', function($q) {
+                    $q->where('jenis_jadwal', 'sekolah');
+                });
             }
 
             if ($request->jenis_peserta === 'home_private') {
-                $query->whereNotNull('home_private_id');
+                $queryPeserta->whereNotNull('home_private_id');
+                 // Untuk instruktur, filter berdasarkan jenis jadwal
+                 $queryInstruktur->whereHas('jadwal', function($q) {
+                    $q->where('jenis_jadwal', 'home_private');
+                });
             }
         }
 
@@ -192,7 +209,10 @@ class AbsensiController extends Controller
         // FILTER SEKOLAH
         // ===============================
         if ($sekolahId) {
-            $query->whereHas('jadwal', function ($q) use ($sekolahId) {
+            $queryPeserta->whereHas('jadwal', function ($q) use ($sekolahId) {
+                $q->where('sekolah_id', $sekolahId);
+            });
+            $queryInstruktur->whereHas('jadwal', function ($q) use ($sekolahId) {
                 $q->where('sekolah_id', $sekolahId);
             });
         }
@@ -201,24 +221,29 @@ class AbsensiController extends Controller
         // FILTER TANGGAL ABSENSI
         // ===============================
         if ($request->filled('tanggal_mulai') && $request->filled('tanggal_selesai')) {
-            $query->whereBetween('tanggal', [
-                $request->tanggal_mulai,
-                $request->tanggal_selesai,
-            ]);
+            $range = [$request->tanggal_mulai, $request->tanggal_selesai];
+            $queryPeserta->whereBetween('tanggal', $range);
+            $queryInstruktur->whereBetween('tanggal', $range);
         }
 
         // ===============================
-        // SORTING AMAN
+        // SORTING & GET
         // ===============================
-        $absensis = $query
+        $absensis = $queryPeserta
             ->orderBy('tanggal')
             ->orderBy('jadwal_id')
             ->orderByRaw('COALESCE(peserta_id, home_private_id)')
             ->get();
 
+        $absensiInstrukturs = $queryInstruktur
+            ->orderBy('tanggal')
+            ->orderBy('jadwal_id')
+            ->get();
+
         return view('absensi.rekap-filter', compact(
             'sekolahs',
             'absensis',
+            'absensiInstrukturs',
             'sekolahId'
         ));
     }

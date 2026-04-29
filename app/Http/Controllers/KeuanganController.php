@@ -146,7 +146,10 @@ class KeuanganController extends Controller
             $totalGaji = 0;
             $adaTarifKosong = false;
 
+            $rincian = [];
+            
             foreach ($absensis as $absen) {
+                // Tarif sekarang spesifik per sekolah/home private
                 $tarif = $absen->jadwal->tarifInstruktur();
 
                 if ($tarif === 0) {
@@ -154,11 +157,36 @@ class KeuanganController extends Controller
                 }
 
                 $totalGaji += $tarif;
+
+                // Buat key untuk grouping rincian
+                // Contoh: "Sekolah (SDN 1)" atau "Home Private (Budi)"
+                if ($absen->jadwal->jenis_jadwal === 'sekolah') {
+                    $nama = $absen->jadwal->sekolah->nama_sekolah ?? 'Sekolah';
+                    $key  = "Sekolah: $nama";
+                } else {
+                    $nama = $absen->jadwal->homePrivate->nama_peserta ?? 'Home Private';
+                    $key  = "Private: $nama";
+                }
+
+                if (!isset($rincian[$key])) {
+                    $rincian[$key] = ['count' => 0, 'subtotal' => 0];
+                }
+                $rincian[$key]['count']++;
+                $rincian[$key]['subtotal'] += $tarif;
+            }
+
+            // Format rincian menjadi string untuk view
+            // Contoh strings: ["Sekolah: SDN 1 (2x) = Rp 300.000", ...]
+            $rincianStrings = [];
+            foreach ($rincian as $k => $v) {
+                $sub = number_format($v['subtotal'], 0, ',', '.');
+                $rincianStrings[] = "$k ({$v['count']}x) : Rp $sub";
             }
 
             $instruktur->total_hadir = $absensis->count();
             $instruktur->total_gaji  = $totalGaji;
             $instruktur->tarif_valid = !$adaTarifKosong;
+            $instruktur->rincian     = $rincianStrings; // Array of strings
 
             return $instruktur;
         });

@@ -197,7 +197,7 @@ class PembayaranController extends Controller
         // ===============================
         // SEKOLAH (AKSES & FILTER)
         // ===============================
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->role === 'bendahara') {
             $sekolahs  = Sekolah::orderBy('nama_sekolah')->get();
             $sekolahId = $request->sekolah_id;
         } else {
@@ -269,7 +269,7 @@ class PembayaranController extends Controller
         // ===============================
         // SEKOLAH (AKSES)
         // ===============================
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->role === 'bendahara') {
             $sekolahId = $request->sekolah_id;
         } else {
             $sekolahId = $user->sekolah_id;

@@ -11,6 +11,7 @@ use App\Models\Sekolah;
 use App\Models\Pembayaran;
 use App\Models\Keuangan;
 use App\Models\RaporTugas;
+use App\Models\Rapor;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -96,6 +97,63 @@ class DashboardController extends Controller
                 'uangMasuk',
                 'uangKeluar',
                 'saldo',
+                'bulan',
+                'tahun'
+            ));
+        }
+
+        /* ==================================================
+         | BENDAHARA
+         |================================================== */
+        if ($user->role === 'bendahara') {
+            $pembayaranBelum = Pembayaran::where('status', 'belum')->count();
+            $pembayaranLunas = Pembayaran::where('status', 'lunas')->count();
+
+            $uangMasuk = Keuangan::where('tipe', 'masuk')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $uangKeluar = Keuangan::where('tipe', 'keluar')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $saldo = $uangMasuk - $uangKeluar;
+
+            return view('dashboard-bendahara', compact(
+                'pembayaranBelum',
+                'pembayaranLunas',
+                'uangMasuk',
+                'uangKeluar',
+                'saldo',
+                'bulan',
+                'tahun'
+            ));
+        }
+
+        /* ==================================================
+         | SEKRETARIS
+         |================================================== */
+        if ($user->role === 'sekretaris') {
+            $totalTugas = RaporTugas::count();
+            $tugasPending = RaporTugas::where('status', 'pending')->count();
+            $tugasInProgress = RaporTugas::where('status', 'in_progress')->count();
+
+            $raporMenungguValidasi = Rapor::where('status', 'submitted')->count();
+            $raporDisetujui = Rapor::where('status', 'approved')->count();
+
+            $totalInstruktur = User::where('role', 'instruktur')->count();
+            $totalSekolah = Sekolah::count();
+
+            return view('dashboard-sekretaris', compact(
+                'totalTugas',
+                'tugasPending',
+                'tugasInProgress',
+                'raporMenungguValidasi',
+                'raporDisetujui',
+                'totalInstruktur',
+                'totalSekolah',
                 'bulan',
                 'tahun'
             ));

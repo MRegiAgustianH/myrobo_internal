@@ -40,7 +40,7 @@ Rekap Pembayaran
                 Sekolah
             </label>
 
-            @if(auth()->user()->isAdmin())
+            @if(auth()->user()->isAdmin() || auth()->user()->role === 'bendahara')
                 <select name="sekolah_id"
                         class="w-full bg-white border border-[#E3EEF0]
                                rounded-lg px-3 py-2 text-sm">

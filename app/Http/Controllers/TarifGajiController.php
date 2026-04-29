@@ -86,21 +86,28 @@ class TarifGajiController extends Controller
     public function quickStore(Request $request)
     {
         $request->validate([
-            'jenis_jadwal' => 'required|in:sekolah,home_private',
-            'tarif'        => 'required|numeric|min:0',
-            'sekolah_id'   => 'nullable|exists:sekolahs,id',
+            'jenis_jadwal'    => 'required|in:sekolah,home_private',
+            'tarif'           => 'required|numeric|min:0',
+            'sekolah_id'      => 'nullable|exists:sekolahs,id',
+            'home_private_id' => 'nullable|exists:home_privates,id',
         ]);
 
-        // home private = tanpa sekolah
+        $where = [
+            'jenis_jadwal' => $request->jenis_jadwal,
+        ];
+
         if ($request->jenis_jadwal === 'home_private') {
-            $request->merge(['sekolah_id' => null]);
+            $where['home_private_id'] = $request->home_private_id;
+            // pastikan sekolah_id null
+            $where['sekolah_id'] = null;
+        } else {
+            $where['sekolah_id'] = $request->sekolah_id;
+            // pastikan home_private_id null
+            $where['home_private_id'] = null;
         }
 
         TarifGaji::updateOrCreate(
-            [
-                'jenis_jadwal' => $request->jenis_jadwal,
-                'sekolah_id'   => $request->sekolah_id,
-            ],
+            $where,
             [
                 'tarif' => $request->tarif,
             ]
@@ -108,7 +115,5 @@ class TarifGajiController extends Controller
 
         return back()->with('success', 'Tarif gaji berhasil disimpan');
     }
-
-
 
 }

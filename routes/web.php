@@ -70,7 +70,7 @@ Route::middleware('auth')->group(function () {
     )->name('rapor.cetak');
 });
 
-Route::prefix('admin')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:admin,sekretaris'])->group(function () {
 
         Route::get('/rapor-tugas', 
             [RaporTugasController::class, 'index']
@@ -126,7 +126,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
 });
 
 Route::prefix('admin')
-    ->middleware(['auth','role:admin'])
+    ->middleware(['auth','role:admin,sekretaris'])
     ->group(function () {
 
         Route::get(
@@ -187,10 +187,12 @@ Route::middleware(['auth','role:admin'])->group(function () {
             [PesertaController::class, 'import']
         )->name('peserta.import');
 
+});
+
+Route::middleware(['auth','role:admin,bendahara'])->group(function () {
         Route::resource('keuangan', KeuanganController::class)->except(['show']);
         Route::get('keuangan/gaji-instruktur', [KeuanganController::class, 'gajiInstruktur'])->name('keuangan.gaji.instruktur');
         Route::post('keuangan/gaji-instruktur/bayar', [KeuanganController::class, 'bayarGajiInstruktur'])->name('keuangan.gaji.bayar');
-
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {

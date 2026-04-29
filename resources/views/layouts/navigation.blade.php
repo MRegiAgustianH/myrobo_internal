@@ -200,6 +200,94 @@
 
     @endif
 
+    {{-- ================= BENDAHARA ================= --}}
+    @if(Auth::user()->role === 'bendahara')
+
+    <div>
+        <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
+            Bendahara
+        </p>
+
+        <a href="{{ route('dashboard') }}"
+           class="{{ $menuClass }} {{ request()->routeIs('dashboard') ? $active : $hover }}">
+            <i data-feather="home" class="w-4 h-4"></i>
+            Dashboard
+        </a>
+    </div>
+
+    <div>
+        <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
+            Keuangan
+        </p>
+
+        <a href="{{ route('keuangan.index') }}"
+           class="{{ $menuClass }} {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+            <i data-feather="activity" class="w-4 h-4"></i>
+            Pengeluaran
+        </a>
+
+        <a href="{{ route('pembayaran.index') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.index') ? $active : $hover }}">
+            <i data-feather="credit-card" class="w-4 h-4"></i>
+            Pembayaran
+        </a>
+
+        <a href="{{ route('pembayaran.invoice.form') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.invoice.*') ? $active : $hover }}">
+            <i data-feather="file-text" class="w-4 h-4"></i>
+            Cetak Invoice
+        </a>
+        
+        <a href="{{ route('pembayaran.rekap') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.rekap') ? $active : $hover }}">
+            <i data-feather="dollar-sign" class="w-4 h-4"></i>
+            Rekap Pembayaran
+        </a>
+    </div>
+
+    @endif
+
+    {{-- ================= SEKRETARIS ================= --}}
+    @if(Auth::user()->role === 'sekretaris')
+
+    <div>
+        <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
+            Sekretaris
+        </p>
+
+        <a href="{{ route('dashboard') }}"
+           class="{{ $menuClass }} {{ request()->routeIs('dashboard') ? $active : $hover }}">
+            <i data-feather="home" class="w-4 h-4"></i>
+            Dashboard
+        </a>
+    </div>
+
+    <div>
+        <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
+            Akademik
+        </p>
+
+        <a href="{{ route('admin.rapor-tugas.index') }}"
+           class="{{ $menuClass }} {{ request()->routeIs('admin.rapor-tugas.*') ? $active : $hover }}">
+            <i data-feather="bar-chart-2" class="w-4 h-4"></i>
+            Penugasan Rapor
+        </a>
+        
+        <a href="{{ route('jadwal.index') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('jadwal.*') ? $active : $hover }}">
+            <i data-feather="calendar" class="w-4 h-4"></i>
+            Jadwal
+        </a>
+
+        <a href="{{ route('absensi.rekap.filter') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('absensi.rekap.*') ? $active : $hover }}">
+            <i data-feather="clipboard" class="w-4 h-4"></i>
+            Rekap Absensi
+        </a>
+    </div>
+
+    @endif
+
     </nav>
 
     {{-- PROFILE --}}

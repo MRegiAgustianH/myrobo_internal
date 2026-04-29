@@ -19,6 +19,11 @@ Gaji Instruktur
 @endif
 @endforeach
 
+<script>
+    // Data Tarif untuk JS
+    const tarifMap = @json($tarifMap);
+</script>
+
 {{-- ================= HEADER ================= --}}
 <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
     <div>
@@ -121,67 +126,78 @@ Gaji Instruktur
 
 {{-- ================= DESKTOP TABLE ================= --}}
 <div class="hidden md:block rounded-2xl border bg-white shadow-sm overflow-x-auto">
-<table class="min-w-full text-sm">
-<thead class="border-b bg-gray-50">
-<tr>
-    <th class="px-5 py-3 text-left">Instruktur</th>
-    <th class="px-5 py-3 text-center">Hadir</th>
-    <th class="px-5 py-3 text-right">Total Gaji</th>
-    <th class="px-5 py-3 text-center">Status</th>
-    <th class="px-5 py-3 text-center">Aksi</th>
-</tr>
-</thead>
-<tbody class="divide-y">
-@foreach($instrukturs as $i)
-@php
-    $dibayar = in_array($i->id, $sudahDibayarIds);
-@endphp
-<tr class="hover:bg-gray-50">
-    <td class="px-5 py-4 font-medium text-gray-800">
-        {{ $i->name }}
-    </td>
+    <table class="min-w-full text-sm">
+        <thead class="border-b bg-gray-50">
+        <tr>
+            <th class="px-5 py-3 text-left">Instruktur</th>
+            <th class="px-5 py-3 text-center">Hadir</th>
+            <th class="px-5 py-3 text-right">Total Gaji</th>
+            <th class="px-5 py-3 text-center">Status</th>
+            <th class="px-5 py-3 text-center">Aksi</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y">
+        @foreach($instrukturs as $i)
+            @php
+                $dibayar = in_array($i->id, $sudahDibayarIds);
+            @endphp
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-4 font-medium text-gray-800">
+                    {{ $i->name }}
+                </td>
 
-    <td class="px-5 py-4 text-center text-gray-600">
-        {{ $i->total_hadir }}x
-    </td>
+                <td class="px-5 py-4 text-center text-gray-600">
+                    {{ $i->total_hadir }}x
+                </td>
 
-    <td class="px-5 py-4 text-right font-semibold">
-        @if(!$i->tarif_valid && $i->total_hadir > 0)
-            <span class="inline-flex items-center gap-1 text-red-600">
-                <i data-feather="alert-circle" class="w-4 h-4"></i>
-                Tarif belum diset
-            </span>
-        @else
-            Rp {{ number_format($i->total_gaji, 0, ',', '.') }}
-        @endif
-    </td>
+                <td class="px-5 py-4 text-right font-semibold">
+                    @if(!$i->tarif_valid && $i->total_hadir > 0)
+                        <span class="inline-flex items-center gap-1 text-red-600">
+                            <i data-feather="alert-circle" class="w-4 h-4"></i>
+                            Tarif belum diset
+                        </span>
+                    @else
+                        Rp {{ number_format($i->total_gaji, 0, ',', '.') }}
+                    @endif
+                </td>
 
-    <td class="px-5 py-4 text-center">
-        <span class="{{ $dibayar ? 'badge-success' : 'badge-warning' }}">
-            {{ $dibayar ? 'Sudah Dibayar' : 'Belum Dibayar' }}
-        </span>
-    </td>
+                <td class="px-5 py-4 text-center">
+                    <span class="{{ $dibayar ? 'badge-success' : 'badge-warning' }}">
+                        {{ $dibayar ? 'Sudah Dibayar' : 'Belum Dibayar' }}
+                    </span>
+                </td>
 
-    <td class="px-5 py-4 text-center">
-        @if(!$dibayar && $i->total_gaji > 0 && $i->tarif_valid)
-        <button
-            onclick="openModal(
-                '{{ $i->id }}',
-                '{{ $i->name }}',
-                '{{ number_format($i->total_gaji,0,',','.') }}'
-            )"
-            class="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700">
-            <i data-feather="credit-card" class="w-4 h-4"></i>
-            Bayar
-        </button>
-        @else
-        <span class="text-gray-400">—</span>
-        @endif
-    </td>
-</tr>
-@endforeach
-</tbody>
-</table>
+                <td class="px-5 py-4 text-center">
+                    @if(!$dibayar && $i->total_gaji > 0 && $i->tarif_valid)
+                        <div class="flex flex-col gap-2 items-center">
+                            {{-- Rincian Kecil --}}
+                            @if(isset($i->rincian) && count($i->rincian) > 0)
+                            <div class="text-xs text-gray-500 text-left bg-gray-50 p-2 rounded w-full">
+                                @foreach($i->rincian as $r)
+                                    <div>• {{ $r }}</div>
+                                @endforeach
+                            </div>
+                            @endif
+
+                            <button
+                                onclick="openModal(
+                                    '{{ $i->id }}',
+                                    '{{ $i->name }}',
+                                    '{{ number_format($i->total_gaji,0,',','.') }}'
+                                )"
+                                class="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700">
+                                <i data-feather="credit-card" class="w-4 h-4"></i>
+                                Bayar
+                            </button>
+                        </div>
+                    @else
+                    <span class="text-gray-400">—</span>
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
 </div>
 
 {{-- ================= MOBILE CARD ================= --}}
@@ -472,50 +488,38 @@ function closeModalBayar() {
         }
     });
 
-    /* ================= LOGIC MODAL ================= */
-    // Parameter:
-    // 1. jenis: 'sekolah' atau 'private'
-    // 2. nominal: (integer) nilai gaji saat ini, default 0
-    // 3. selectedId: (integer) id sekolah/private yang mau diedit, default null
     function openModalGaji(jenis, nominal = 0, selectedId = null) {
-        // Sembunyikan dropdown menu pemicu (jika ada)
-        if(dropdownGaji) dropdownGaji.classList.add('hidden');
 
-        // Reset Form & Set Nilai Awal
-        modalTarif.value = nominal; // Isi input dengan data tarif lama
+        if(dropdownGaji) dropdownGaji.classList.add('hidden');
+        
+        modalTarif.value = nominal || ''; 
         formSekolah.classList.add('hidden');
         formHomePrivate.classList.add('hidden');
         
-        // Set Jenis Jadwal
+        document.getElementById('modalSekolah').value = "";
+        document.getElementById('modalHomePrivate').value = "";
+
         modalJenisJadwal.value = jenis;
 
         if (jenis === 'sekolah') {
             modalInfo.innerText = 'Atur tarif standar untuk Sekolah.';
             formSekolah.classList.remove('hidden');
             
-            // Auto select Sekolah jika ID dikirim
             if(selectedId) {
                 document.getElementById('modalSekolah').value = selectedId;
-            } else {
-                document.getElementById('modalSekolah').value = ""; // Reset
             }
 
         } else {
             modalInfo.innerText = 'Atur tarif khusus untuk Home Private.';
             formHomePrivate.classList.remove('hidden');
             
-            // Auto select Private jika ID dikirim
             if(selectedId) {
                 document.getElementById('modalHomePrivate').value = selectedId;
-            } else {
-                document.getElementById('modalHomePrivate').value = ""; // Reset
             }
         }
-
-        // Tampilkan Modal
+        
         modalSetGaji.classList.remove('hidden');
         
-        // Animasi Masuk
         setTimeout(() => {
             modalBackdrop.classList.remove('opacity-0');
             modalBox.classList.remove('scale-95', 'opacity-0');
@@ -525,6 +529,39 @@ function closeModalBayar() {
         // Refresh icons
         if (typeof feather !== 'undefined') feather.replace();
     }
+
+    // LISTENER PERUBAHAN DROPDOWN (AUTO FILL TARIF)
+    document.getElementById('modalSekolah').addEventListener('change', function() {
+        const id = this.value;
+        if(!id) return;
+        
+        // Key format: sekolah-ID-
+        // Note: di controller home_private_id null jika sekolah
+        const key = `sekolah-${id}-`; 
+        const data = tarifMap[key];
+
+        if(data) {
+            modalTarif.value = data.tarif;
+        } else {
+            modalTarif.value = ''; // Reset jika belum ada
+        }
+    });
+
+    document.getElementById('modalHomePrivate').addEventListener('change', function() {
+        const id = this.value;
+        if(!id) return;
+
+        // Key format: home_private--ID
+        // Note: di controller sekolah_id null jika home_private
+        const key = `home_private--${id}`;
+        const data = tarifMap[key];
+
+        if(data) {
+            modalTarif.value = data.tarif;
+        } else {
+            modalTarif.value = '';
+        }
+    });
 
     function closeModalGaji() {
         // Animation Out

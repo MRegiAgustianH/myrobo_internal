@@ -191,11 +191,13 @@ function userForm(data = {}) {
                 <option value="admin" ${data.role === 'admin' ? 'selected' : ''}>Admin</option>
                 <option value="instruktur" ${data.role === 'instruktur' ? 'selected' : ''}>Instruktur</option>
                 <option value="admin_sekolah" ${data.role === 'admin_sekolah' ? 'selected' : ''}>Admin Sekolah</option>
+                <option value="bendahara" ${data.role === 'bendahara' ? 'selected' : ''}>Bendahara</option>
+                <option value="sekretaris" ${data.role === 'sekretaris' ? 'selected' : ''}>Sekretaris</option>
             </select>
         </div>
 
         <div id="sekolah-wrapper"
-             class="${data.role === 'admin_sekolah' ? '' : 'hidden'}">
+             class="${data.role === 'admin_sekolah' || data.role === 'bendahara' || data.role === 'sekretaris' ? '' : 'hidden'}">
             <label class="block mb-1 font-medium">Sekolah</label>
             <select id="sekolah_id"
                 class="w-full px-3 py-2 border rounded">
