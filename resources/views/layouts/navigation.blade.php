@@ -264,6 +264,24 @@
 
     <div>
         <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
+            Penjadwalan
+        </p>
+
+        <a href="{{ route('jadwal.index') }}"
+           class="{{ $menuClass }} {{ request()->routeIs('jadwal.*') ? $active : $hover }}">
+            <i data-feather="calendar" class="w-4 h-4"></i>
+            Kelola Jadwal
+        </a>
+
+        <a href="{{ route('absensi.rekap.filter') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('absensi.rekap.*') ? $active : $hover }}">
+            <i data-feather="clipboard" class="w-4 h-4"></i>
+            Rekap Absensi
+        </a>
+    </div>
+
+    <div>
+        <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
             Akademik
         </p>
 
@@ -271,18 +289,6 @@
            class="{{ $menuClass }} {{ request()->routeIs('admin.rapor-tugas.*') ? $active : $hover }}">
             <i data-feather="bar-chart-2" class="w-4 h-4"></i>
             Penugasan Rapor
-        </a>
-        
-        <a href="{{ route('jadwal.index') }}"
-           class="{{ $menuClass }} mt-1 {{ request()->routeIs('jadwal.*') ? $active : $hover }}">
-            <i data-feather="calendar" class="w-4 h-4"></i>
-            Jadwal
-        </a>
-
-        <a href="{{ route('absensi.rekap.filter') }}"
-           class="{{ $menuClass }} mt-1 {{ request()->routeIs('absensi.rekap.*') ? $active : $hover }}">
-            <i data-feather="clipboard" class="w-4 h-4"></i>
-            Rekap Absensi
         </a>
     </div>
 

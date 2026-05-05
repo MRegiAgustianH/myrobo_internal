@@ -13,7 +13,7 @@ Kalender Jadwal Pelatihan
 @endif
 
 {{-- ADMIN BUTTON --}}
-@if(auth()->user()->role === 'admin')
+@if(in_array(auth()->user()->role, ['admin', 'sekretaris']))
 <div class="flex justify-end mb-4">
     <button onclick="openCreateModal()"
         class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
         events,
 
         eventClick: function(info) {
-            @if(auth()->user()->role === 'admin')
+            @if(in_array(auth()->user()->role, ['admin', 'sekretaris']))
             openDetailModal(info.event.id);
             @endif
         },

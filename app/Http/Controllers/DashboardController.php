@@ -146,6 +146,14 @@ class DashboardController extends Controller
             $totalInstruktur = User::where('role', 'instruktur')->count();
             $totalSekolah = Sekolah::count();
 
+            // Jadwal stats
+            $totalJadwal = Jadwal::count();
+            $jadwalHariIni = Jadwal::whereDate('tanggal_mulai', Carbon::today())->count();
+            $jadwalMingguIni = Jadwal::whereBetween('tanggal_mulai', [
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->endOfWeek(),
+            ])->count();
+
             return view('dashboard-sekretaris', compact(
                 'totalTugas',
                 'tugasPending',
@@ -154,6 +162,9 @@ class DashboardController extends Controller
                 'raporDisetujui',
                 'totalInstruktur',
                 'totalSekolah',
+                'totalJadwal',
+                'jadwalHariIni',
+                'jadwalMingguIni',
                 'bulan',
                 'tahun'
             ));

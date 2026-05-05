@@ -222,7 +222,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/jadwal', [JadwalController::class, 'index'])
         ->name('jadwal.index');
 
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin,sekretaris')->group(function () {
 
         Route::post('/jadwal', [JadwalController::class, 'store'])
             ->name('jadwal.store');
