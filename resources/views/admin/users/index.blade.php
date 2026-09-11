@@ -7,6 +7,21 @@ Manajemen User
 @section('content')
 
 {{-- ACTION BAR --}}
+@if(auth()->user()->role === 'superadmin' && isset($cabangs))
+<form method="GET" class="mb-4 flex gap-3 items-end">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Cabang</label>
+        <select name="cabang_id" class="bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">-- Semua Cabang --</option>
+            @foreach($cabangs as $cb)
+                <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>
+                    {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                </option>
+            @endforeach
+        </select>
+    </div>
+</form>
+@endif
 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
     <h2 class="text-lg font-semibold text-gray-700">
         Daftar User
@@ -121,6 +136,8 @@ Manajemen User
 
 </div>
 
+<div class="mt-4">{{ $users->links() }}</div>
+
 <script>
 function openCreateModal() {
     Swal.fire({
@@ -188,7 +205,10 @@ function userForm(data = {}) {
                 onchange="toggleSekolah()"
                 class="w-full px-3 py-2 border rounded">
                 <option value="">-- Pilih Role --</option>
-                <option value="admin" ${data.role === 'admin' ? 'selected' : ''}>Admin</option>
+                @if(auth()->user()->role === 'superadmin')
+                <option value="superadmin" ${data.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
+                <option value="admin_cabang" ${data.role === 'admin_cabang' ? 'selected' : ''}>Admin Cabang</option>
+                @endif
                 <option value="instruktur" ${data.role === 'instruktur' ? 'selected' : ''}>Instruktur</option>
                 <option value="admin_sekolah" ${data.role === 'admin_sekolah' ? 'selected' : ''}>Admin Sekolah</option>
                 <option value="bendahara" ${data.role === 'bendahara' ? 'selected' : ''}>Bendahara</option>
@@ -197,7 +217,7 @@ function userForm(data = {}) {
         </div>
 
         <div id="sekolah-wrapper"
-             class="${data.role === 'admin_sekolah' || data.role === 'bendahara' || data.role === 'sekretaris' ? '' : 'hidden'}">
+             class="${data.role === 'admin_sekolah' ? '' : 'hidden'}">
             <label class="block mb-1 font-medium">Sekolah</label>
             <select id="sekolah_id"
                 class="w-full px-3 py-2 border rounded">
@@ -209,6 +229,26 @@ function userForm(data = {}) {
                     </option>
                 @endforeach
             </select>
+        </div>
+
+        <div id="cabang-wrapper"
+             class="${data.role === 'admin_cabang' || data.role === 'instruktur' || data.role === 'bendahara' || data.role === 'sekretaris' ? '' : 'hidden'}">
+            <label class="block mb-1 font-medium">Cabang</label>
+            @if(auth()->user()->role === 'superadmin')
+            <select id="cabang_id"
+                class="w-full px-3 py-2 border rounded">
+                <option value="">-- Pilih Cabang --</option>
+                @foreach($cabangs as $cb)
+                    <option value="{{ $cb->id }}"
+                        ${data.cabang_id == {{ $cb->id }} ? 'selected' : ''}>
+                        {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                    </option>
+                @endforeach
+            </select>
+            @else
+            <input type="hidden" id="cabang_id" value="{{ auth()->user()->cabang_id }}">
+            <input type="text" class="w-full px-3 py-2 border rounded bg-gray-50" value="{{ auth()->user()->cabang?->nama_cabang ?? '-' }}" readonly>
+            @endif
         </div>
 
         <div>
@@ -225,14 +265,25 @@ function userForm(data = {}) {
 
 function toggleSekolah() {
     const role = document.getElementById('role').value;
-    const wrapper = document.getElementById('sekolah-wrapper');
+    const sekolahWrapper = document.getElementById('sekolah-wrapper');
+    const cabangWrapper = document.getElementById('cabang-wrapper');
 
+    // Sekolah: only for admin_sekolah
     if (role === 'admin_sekolah') {
-        wrapper.classList.remove('hidden');
+        sekolahWrapper.classList.remove('hidden');
     } else {
-        wrapper.classList.add('hidden');
+        sekolahWrapper.classList.add('hidden');
         const sekolah = document.getElementById('sekolah_id');
         if (sekolah) sekolah.value = '';
+    }
+
+    // Cabang: for admin_cabang, instruktur, bendahara, sekretaris (NOT superadmin)
+    if (role === 'admin_cabang' || role === 'instruktur' || role === 'bendahara' || role === 'sekretaris') {
+        cabangWrapper.classList.remove('hidden');
+    } else {
+        cabangWrapper.classList.add('hidden');
+        const cabang = document.getElementById('cabang_id');
+        if (cabang) cabang.value = '';
     }
 }
 
@@ -269,6 +320,7 @@ function submitForm(action, method) {
         <input type="hidden" name="username" value="${document.getElementById('username').value}">
         <input type="hidden" name="email" value="${document.getElementById('email').value}">
         <input type="hidden" name="role" value="${document.getElementById('role').value}">
+            <input type="hidden" name="cabang_id" value="${document.getElementById('cabang_id')?.value || ''}">
         <input type="hidden" name="password" value="${document.getElementById('password').value}">
         <input type="hidden" name="sekolah_id"
                value="${sekolahEl ? sekolahEl.value : ''}">

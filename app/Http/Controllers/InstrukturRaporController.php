@@ -143,7 +143,7 @@ class InstrukturRaporController extends Controller
     {
         $user = auth()->user();
 
-        abort_if($rapor->raporTugas->instruktur_id !== $user->id, 403);
+        abort_if($rapor->tugas->instruktur_id !== $user->id, 403);
 
         // Validasi minimal sebelum submit
         if (
@@ -162,12 +162,12 @@ class InstrukturRaporController extends Controller
 
         // Update status tugas jika semua rapor selesai
         if (
-            $rapor->raporTugas
+            $rapor->tugas
                 ->rapors()
                 ->whereIn('status', ['draft','revision'])
                 ->count() === 0
         ) {
-            $rapor->raporTugas->update([
+            $rapor->tugas->update([
                 'status' => 'completed'
             ]);
         }

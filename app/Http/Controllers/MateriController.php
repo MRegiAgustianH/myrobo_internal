@@ -14,7 +14,7 @@ class MateriController extends Controller
     {
         $materis = Materi::withCount('kompetensis')
             ->orderBy('nama_materi')
-            ->get();
+            ->paginate(10);
 
         $readonly = auth()->user()->role === 'instruktur';
 

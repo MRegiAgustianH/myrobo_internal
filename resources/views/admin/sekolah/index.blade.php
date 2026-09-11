@@ -89,7 +89,9 @@ Manajemen Sekolah
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b">
                 <tr class="text-gray-600 uppercase text-xs tracking-wider">
+                    <th class="px-4 py-3 text-center">Logo</th>
                     <th class="px-4 py-3 text-left">Sekolah</th>
+                    <th class="px-4 py-3 text-center">Cabang</th>
                     <th class="px-4 py-3 text-center">Kontak</th>
                     <th class="px-4 py-3 text-center">Nominal</th>
                     <th class="px-4 py-3 text-center">Mulai</th>
@@ -100,11 +102,27 @@ Manajemen Sekolah
             <tbody class="divide-y">
             @foreach($sekolahs as $s)
                 <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3 text-center">
+                        @if($s->logo)
+                        <img src="{{ asset('storage/' . $s->logo) }}" class="w-10 h-10 rounded-lg object-contain mx-auto">
+                        @else
+                        <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 mx-auto">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        @endif
+                    </td>
                     <td class="px-4 py-3">
                         <p class="font-medium">{{ $s->nama_sekolah }}</p>
                         <p class="text-xs text-gray-500 truncate max-w-xs">
                             {{ $s->alamat }}
                         </p>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        @if($s->cabang)
+                        <span class="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{{ $s->cabang->nama_cabang }}</span>
+                        @else
+                        <span class="text-xs text-gray-400">-</span>
+                        @endif
                     </td>
 
                     <td class="px-4 py-3 text-center">
@@ -151,6 +169,8 @@ Manajemen Sekolah
     </div>
 </div>
 
+<div class="mt-4">{{ $sekolahs->links() }}</div>
+
 {{-- ================= SWEETALERT SCRIPT ================= --}}
 <script>
 function openCreateModal() {
@@ -190,6 +210,24 @@ function schoolForm(data = {}) {
     <input type="hidden" id="csrf" value="{{ csrf_token() }}">
 
     <div class="space-y-4 text-left text-sm">
+        @if(auth()->user()->role === 'superadmin')
+        <div>
+            <label class="font-medium">Cabang</label>
+            <select id="cabang_id" class="w-full px-3 py-2 border rounded">
+                <option value="">-- Pilih Cabang --</option>
+                @foreach(\App\Models\Cabang::orderBy('nama_cabang')->get() as $cb)
+                    <option value="{{ $cb->id }}">{{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})</option>
+                @endforeach
+            </select>
+        </div>
+        @else
+        <div>
+            <label class="font-medium">Cabang</label>
+            <input type="hidden" id="cabang_id" value="{{ auth()->user()->cabang_id }}">
+            <input type="text" class="w-full px-3 py-2 border rounded bg-gray-50" value="{{ auth()->user()->cabang?->nama_cabang ?? '-' }}" readonly>
+        </div>
+        @endif
+
         <div>
             <label class="font-medium">Nama Sekolah</label>
             <input id="nama" class="w-full px-3 py-2 border rounded"
@@ -206,6 +244,11 @@ function schoolForm(data = {}) {
             <label class="font-medium">Kontak</label>
             <input id="kontak" class="w-full px-3 py-2 border rounded"
                    value="${data.kontak ?? ''}">
+        </div>
+
+        <div>
+            <label class="font-medium">Logo Sekolah</label>
+            <input id="logo" type="file" accept="image/*" class="w-full px-3 py-2 border rounded">
         </div>
 
         <div>
@@ -246,6 +289,7 @@ function submitForm(action, method) {
     form.innerHTML = `
         <input type="hidden" name="_token" value="${document.getElementById('csrf').value}">
         ${method !== 'POST' ? `<input type="hidden" name="_method" value="${method}">` : ''}
+        <input type="hidden" name="cabang_id" value="${document.getElementById('cabang_id')?.value || ''}">
         <input type="hidden" name="nama_sekolah" value="${nama.value}">
         <input type="hidden" name="alamat" value="${alamat.value}">
         <input type="hidden" name="kontak" value="${kontak.value}">
@@ -254,7 +298,18 @@ function submitForm(action, method) {
         <input type="hidden" name="tgl_akhir_kerjasama" value="${akhir.value}">
     `;
     document.body.appendChild(form);
-    form.submit();
+
+    // Append logo file if selected
+    const logoInput = document.getElementById('logo');
+    if (logoInput && logoInput.files[0]) {
+        const fd = new FormData(form);
+        fd.set('logo', logoInput.files[0]);
+        fetch(form.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(() => window.location.reload())
+            .catch(() => window.location.reload());
+    } else {
+        form.submit();
+    }
 }
 
 function confirmDelete(e) {

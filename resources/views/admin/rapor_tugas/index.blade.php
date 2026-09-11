@@ -18,6 +18,20 @@
 
 @section('content')
 
+@if(auth()->user()->role === 'superadmin' && isset($cabangs))
+<form method="GET" class="mb-4 flex gap-3 items-end">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Cabang</label>
+        <select name="cabang_id" class="bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">-- Semua Cabang --</option>
+            @foreach($cabangs as $cb)
+                <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>{{ $cb->nama_cabang }}</option>
+            @endforeach
+        </select>
+    </div>
+</form>
+@endif
+
 {{-- ================= SUCCESS ================= --}}
 @if(session('success'))
 <div class="mb-5 flex items-start gap-3 p-4
@@ -59,8 +73,25 @@
     </div>
 
     <form method="POST" action="{{ route('admin.rapor-tugas.store') }}"
-          class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         @csrf
+
+        @if(auth()->user()->role === 'superadmin')
+        {{-- CABANG --}}
+        <div>
+            <label class="text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                <i data-feather="map-pin" class="w-3 h-3"></i> Cabang
+            </label>
+            <select name="cabang_id" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="">Pilih Cabang</option>
+                @foreach($cabangs as $cb)
+                    <option value="{{ $cb->id }}" @selected(old('cabang_id') == $cb->id)>{{ $cb->nama_cabang }}</option>
+                @endforeach
+            </select>
+        </div>
+        @else
+        <input type="hidden" name="cabang_id" value="{{ auth()->user()->cabang_id }}">
+        @endif
 
         {{-- SEKOLAH --}}
         <div>
@@ -71,7 +102,7 @@
                 class="w-full border rounded-lg px-3 py-2 text-sm
                        {{ $errors->has('sekolah_id') ? 'border-red-400 bg-red-50' : '' }}">
                 <option value="">Pilih Sekolah</option>
-                @foreach(\App\Models\Sekolah::orderBy('nama_sekolah')->get() as $s)
+                @foreach(\App\Models\Sekolah::when(auth()->user()->cabang_id && auth()->user()->role !== 'superadmin', fn($q) => $q->where('cabang_id', auth()->user()->cabang_id))->orderBy('nama_sekolah')->get() as $s)
                     <option value="{{ $s->id }}"
                         @selected(old('sekolah_id') == $s->id)>
                         {{ $s->nama_sekolah }}
@@ -107,7 +138,7 @@
                 class="w-full border rounded-lg px-3 py-2 text-sm
                        {{ $errors->has('instruktur_id') ? 'border-red-400 bg-red-50' : '' }}">
                 <option value="">Pilih Instruktur</option>
-                @foreach(\App\Models\User::where('role','instruktur')->get() as $u)
+                @foreach(\App\Models\User::where('role','instruktur')->when(auth()->user()->cabang_id && auth()->user()->role !== 'superadmin', fn($q) => $q->where('cabang_id', auth()->user()->cabang_id))->get() as $u)
                     <option value="{{ $u->id }}"
                         @selected(old('instruktur_id') == $u->id)>
                         {{ $u->name }}
@@ -175,13 +206,25 @@
         </div>
     </div>
 
-    <a href="{{ route('admin.rapor-tugas.show',$t->id) }}"
-       class="w-full inline-flex justify-center items-center gap-2
-              bg-indigo-600 hover:bg-indigo-700
-              text-white py-2 rounded-xl text-xs font-semibold">
-        <i data-feather="eye" class="w-4 h-4"></i>
-        Detail
-    </a>
+    <div class="flex gap-2">
+        <a href="{{ route('admin.rapor-tugas.show',$t->id) }}"
+           class="flex-1 inline-flex justify-center items-center gap-2
+                  bg-indigo-600 hover:bg-indigo-700
+                  text-white py-2 rounded-xl text-xs font-semibold">
+            <i data-feather="eye" class="w-4 h-4"></i>
+            Detail
+        </a>
+        <a href="{{ route('admin.rapor-tugas.edit',$t->id) }}"
+           class="flex-1 inline-flex justify-center items-center gap-2
+                  bg-yellow-100 text-yellow-700 py-2 rounded-xl text-xs font-semibold">
+            <i data-feather="edit" class="w-4 h-4"></i>
+            Edit
+        </a>
+    </div>
+    <button onclick="confirmDeleteTugas({{ $t->id }})"
+        class="w-full mt-2 bg-red-100 text-red-700 py-2 rounded-xl text-xs font-semibold">
+        Hapus Tugas
+    </button>
 
 </div>
 @empty
@@ -213,7 +256,7 @@
                 <th class="px-6 py-3 text-center">Instruktur</th>
                 <th class="px-6 py-3 text-center">Rapor</th>
                 <th class="px-6 py-3 text-center">Status</th>
-                <th class="px-6 py-3 text-center">Aksi</th>
+                <th class="px-6 py-3 text-center w-64">Aksi</th>
             </tr>
             </thead>
             <tbody class="divide-y">
@@ -232,12 +275,23 @@
                     </span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <a href="{{ route('admin.rapor-tugas.show',$t->id) }}"
-                       class="inline-flex items-center gap-1
-                              text-indigo-600 hover:text-indigo-800">
-                        <i data-feather="eye" class="w-4 h-4"></i>
-                        Detail
-                    </a>
+                    <div class="flex items-center justify-center gap-2">
+                        <a href="{{ route('admin.rapor-tugas.show',$t->id) }}"
+                           class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800">
+                            <i data-feather="eye" class="w-4 h-4"></i>
+                            Detail
+                        </a>
+                        <a href="{{ route('admin.rapor-tugas.edit',$t->id) }}"
+                           class="inline-flex items-center gap-1 text-yellow-600 hover:text-yellow-800">
+                            <i data-feather="edit" class="w-4 h-4"></i>
+                            Edit
+                        </a>
+                        <button onclick="confirmDeleteTugas({{ $t->id }})"
+                            class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
+                            <i data-feather="trash-2" class="w-4 h-4"></i>
+                            Hapus
+                        </button>
+                    </div>
                 </td>
             </tr>
             @endforeach
@@ -246,4 +300,31 @@
     </div>
 </div>
 
+<div class="mt-4">{{ $tugas->links() }}</div>
+
+<form id="deleteForm" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+
+<script>
+function confirmDeleteTugas(id) {
+    Swal.fire({
+        title: 'Hapus Tugas Rapor?',
+        text: "Semua data rapor peserta dalam tugas ini akan dihapus secara permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('deleteForm');
+            form.action = `/admin/rapor-tugas/${id}`;
+            form.submit();
+        }
+    });
+}
+</script>
 @endsection

@@ -3,46 +3,60 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Cabang;
+use App\Models\Sekolah;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $users = User::latest()->get();
-        $sekolahs = \App\Models\Sekolah::all();
-        return view('admin.users.index', compact('users', 'sekolahs'));
+        $user = auth()->user();
+        $query = User::latest();
 
-}
+        // ADMIN CABANG: hanya lihat user di cabangnya
+        if ($user->role === 'admin_cabang') {
+            $query->where('cabang_id', $user->cabang_id);
+        } elseif ($user->role === 'superadmin' && request('cabang_id')) {
+            $query->where('cabang_id', request('cabang_id'));
+        }
 
+        $users = $query->paginate(10);
+        $sekolahs = Sekolah::all();
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
 
-    /**
-     * Show the form for creating a new resource.
-     */
+        return view('admin.users.index', compact('users', 'sekolahs', 'cabangs'));
+    }
+
     public function create()
     {
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
             'name'       => 'required',
             'username'   => 'required|string|max:50|unique:users,username',
             'email'      => 'required|email|unique:users',
-            'role'       => 'required',
-            'password'   => 'nullable|min:6',
+            'role'       => 'required|in:superadmin,admin_cabang,admin_sekolah,instruktur,bendahara,sekretaris',
+            'cabang_id'  => 'nullable|exists:cabangs,id',
             'sekolah_id' => $request->role === 'admin_sekolah'
                 ? 'required|exists:sekolahs,id'
                 : 'nullable',
+            'password'   => 'nullable|min:6',
         ]);
+
+        // SECURITY ACCESS CONTROL: admin_cabang cannot create superadmin or admin_cabang
+        if (auth()->user()->role !== 'superadmin' && in_array($data['role'], ['superadmin', 'admin_cabang'])) {
+            abort(403, 'Anda tidak memiliki hak untuk membuat role ini.');
+        }
+
+        // AUTO-SET CABANG_ID UNTUK ADMIN CABANG
+        if (auth()->user()->role === 'admin_cabang' && empty($data['cabang_id'])) {
+            $data['cabang_id'] = auth()->user()->cabang_id;
+        }
 
         if (!empty($data['password'])) {
             $data['password'] = bcrypt($data['password']);
@@ -55,46 +69,36 @@ class UserController extends Controller
         return back()->with('success', 'User berhasil ditambahkan');
     }
 
-
-
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(string $id)
     {
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name'  => 'required|string',
+            'name'       => 'required|string',
             'username'   => 'required|string|max:50|unique:users,username,' . $user->id,
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'role'  => 'required|in:admin,instruktur,admin_sekolah',
-
-            // sekolah wajib jika admin_sekolah
+            'email'      => 'required|email|unique:users,email,' . $user->id,
+            'role'       => 'required|in:superadmin,admin_cabang,admin_sekolah,instruktur,bendahara,sekretaris',
+            'cabang_id'  => 'nullable|exists:cabangs,id',
             'sekolah_id' => $request->role === 'admin_sekolah'
                 ? 'required|exists:sekolahs,id'
                 : 'nullable',
         ]);
-        /**
-         * JIKA ROLE = ADMIN SEKOLAH
-         * pastikan 1 sekolah hanya punya 1 admin sekolah
-         */
-        if ($data['role'] === 'admin_sekolah') {
 
+        // SECURITY ACCESS CONTROL: admin_cabang cannot update role to superadmin or admin_cabang
+        if (auth()->user()->role !== 'superadmin' && in_array($data['role'], ['superadmin', 'admin_cabang'])) {
+            abort(403, 'Anda tidak memiliki hak untuk mengubah ke role ini.');
+        }
+
+        // JIKA ROLE = ADMIN SEKOLAH, pastikan 1 sekolah hanya 1 admin
+        if ($data['role'] === 'admin_sekolah') {
             $exists = User::where('role', 'admin_sekolah')
                 ->where('sekolah_id', $data['sekolah_id'])
                 ->where('id', '!=', $user->id)
@@ -106,72 +110,49 @@ class UserController extends Controller
                 ]);
             }
         } else {
-            // JIKA ROLE BUKAN admin_sekolah → sekolah_id harus null
             $data['sekolah_id'] = null;
         }
 
-        // UPDATE DATA UTAMA
-        $user->update([
+        $updateData = [
             'name'       => $data['name'],
-            'username' => $data['username'],
+            'username'   => $data['username'],
             'email'      => $data['email'],
             'role'       => $data['role'],
+            'cabang_id'  => $data['cabang_id'] ?? null,
             'sekolah_id' => $data['sekolah_id'],
-        ]);
+        ];
 
-        // UPDATE PASSWORD JIKA ADA
+        $user->update($updateData);
+
         if ($request->filled('password')) {
-            $user->update([
-                'password' => bcrypt($request->password)
-            ]);
+            $user->update(['password' => bcrypt($request->password)]);
         }
 
         return back()->with('success', 'User berhasil diperbarui');
     }
 
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         try {
-            // Ambil user
             $user = User::findOrFail($id);
 
-            // Proteksi: tidak boleh hapus diri sendiri
             if (auth()->id() === $user->id) {
-                return redirect()
-                    ->back()
-                    ->with('success', 'Anda tidak dapat menghapus akun sendiri');
+                return redirect()->back()->with('success', 'Anda tidak dapat menghapus akun sendiri');
             }
 
-            // Proteksi opsional: admin utama tidak boleh dihapus
-            if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
-                return redirect()
-                    ->back()
-                    ->with('success', 'Admin utama tidak boleh dihapus');
+            // Proteksi: superadmin terakhir tidak boleh dihapus
+            if ($user->role === 'superadmin' && User::where('role', 'superadmin')->count() <= 1) {
+                return redirect()->back()->with('success', 'Superadmin terakhir tidak boleh dihapus');
             }
 
-            // Hapus user
             $user->delete();
 
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'User berhasil dihapus');
+            return redirect()->route('users.index')->with('success', 'User berhasil dihapus');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'User tidak ditemukan');
-
+            return redirect()->route('users.index')->with('success', 'User tidak ditemukan');
         } catch (\Exception $e) {
-
-            return redirect()
-                ->route('users.index')
-                ->with('success', 'Terjadi kesalahan saat menghapus user');
+            return redirect()->route('users.index')->with('success', 'Terjadi kesalahan saat menghapus user');
         }
     }
-
 }

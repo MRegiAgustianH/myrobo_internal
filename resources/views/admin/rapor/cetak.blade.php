@@ -151,14 +151,8 @@
     <table class="header">
         <tr>
             <td width="15%" valign="top">
-                @php
-                    $namaSekolah = strtolower($rapor->sekolah->nama_sekolah ?? '');
-                @endphp
-
-                @if(str_contains($namaSekolah, 'al azhar'))
-                    <img src="{{ public_path('images/alazlogo.jpg') }}" class="logo">
-                @elseif(str_contains($namaSekolah, 'islam kreatif'))
-                    <img src="{{ public_path('images/iklogo.jpg') }}" class="logo">
+                @if($rapor->sekolah && $rapor->sekolah->logo)
+                    <img src="{{ public_path('storage/' . $rapor->sekolah->logo) }}" class="logo">
                 @endif
             </td>
 

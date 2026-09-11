@@ -10,9 +10,12 @@ use App\Models\Keuangan;
 use App\Models\Peserta;
 use App\Models\PesertaHomePrivate;
 use App\Models\Sekolah;
+use App\Models\Cabang;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\RekapAbsensiExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 
 class AbsensiController extends Controller
@@ -156,11 +159,24 @@ class AbsensiController extends Controller
         // ===============================
         // DATA SEKOLAH UNTUK FILTER
         // ===============================
-        if ($user->isAdmin() || $user->role === 'sekretaris') {
-            $sekolahs = Sekolah::orderBy('nama_sekolah')->get();
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
+        $cabangId = null;
+
+        if ($user->role === 'superadmin') {
+            $cabangId = $request->cabang_id;
+        } elseif ($user->role === 'admin_cabang' || $user->role === 'bendahara' || $user->role === 'sekretaris') {
+            $cabangId = $user->cabang_id;
+        }
+
+        if (in_array($user->role, ['superadmin', 'admin', 'admin_cabang']) || $user->role === 'sekretaris' || $user->role === 'superadmin' || $user->role === 'admin_cabang' || $user->role === 'bendahara') {
+            $sekolahQuery = Sekolah::orderBy('nama_sekolah');
+            if ($cabangId) {
+                $sekolahQuery->where('cabang_id', $cabangId);
+            }
+            $sekolahs = $sekolahQuery->get();
             $sekolahId = $request->sekolah_id;
         } else {
-            // admin sekolah → terkunci
+            // admin sekolah Ã¢â€ â€™ terkunci
             $sekolahs = Sekolah::where('id', $user->sekolah_id)->get();
             $sekolahId = $user->sekolah_id;
         }
@@ -218,6 +234,14 @@ class AbsensiController extends Controller
         }
 
         // ===============================
+        // FILTER CABANG
+        // ===============================
+        if ($cabangId) {
+            $queryPeserta->whereHas('jadwal', fn($q) => $q->where('cabang_id', $cabangId));
+            $queryInstruktur->whereHas('jadwal', fn($q) => $q->where('cabang_id', $cabangId));
+        }
+
+        // ===============================
         // FILTER TANGGAL ABSENSI
         // ===============================
         if ($request->filled('tanggal_mulai') && $request->filled('tanggal_selesai')) {
@@ -233,23 +257,60 @@ class AbsensiController extends Controller
             ->orderBy('tanggal')
             ->orderBy('jadwal_id')
             ->orderByRaw('COALESCE(peserta_id, home_private_id)')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         $absensiInstrukturs = $queryInstruktur
             ->orderBy('tanggal')
             ->orderBy('jadwal_id')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return view('absensi.rekap-filter', compact(
             'sekolahs',
             'absensis',
             'absensiInstrukturs',
-            'sekolahId'
+            'sekolahId',
+            'cabangs'
         ));
     }
 
 
 
+
+    /* =====================================================
+     | CRUD ABSENSI (ADMIN & SEKRETARIS)
+     | Admin/sekretaris dapat mengubah / hapus absensi
+     | ketika instruktur lupa atau salah input.
+     ===================================================== */
+
+    public function update(Request $request, Absensi $absensi)
+    {
+        if (!in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris'])) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status'     => 'required|in:hadir,izin,sakit,alfa',
+            'keterangan' => 'nullable|string|max:255',
+            'tanggal'    => 'required|date',
+        ]);
+
+        $absensi->update($data);
+
+        return back()->with('success', 'Absensi peserta berhasil diperbarui.');
+    }
+
+    public function destroy(Absensi $absensi)
+    {
+        if (!in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris'])) {
+            abort(403);
+        }
+
+        $absensi->delete();
+
+        return back()->with('success', 'Absensi peserta berhasil dihapus.');
+    }
 
     public function exportRekapPdf(Request $request)
     {
@@ -281,3 +342,5 @@ class AbsensiController extends Controller
     }
 
 }
+
+

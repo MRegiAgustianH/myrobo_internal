@@ -10,31 +10,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MateriModulController extends Controller
 {
-    /**
-     * Daftar modul per materi
-     */
     public function index(Materi $materi)
     {
         $user = auth()->user();
 
-        // ===============================
-        // AUTHORIZATION
-        // ===============================
-        if (! $user->isAdmin() && ! $user->isInstruktur()) {
+        if (!in_array($user->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris', 'instruktur'])) {
             abort(403, 'Tidak memiliki akses');
         }
 
-        // ===============================
-        // LOAD MODUL
-        // ===============================
         $materi->load([
             'moduls' => fn ($q) => $q->orderBy('urutan')
         ]);
 
-        // ===============================
-        // FLAG VIEW MODE
-        // ===============================
-        $readonly = $user->isInstruktur();
+        $readonly = $user->role === 'instruktur';
 
         return view('admin.materi.modul.index', compact(
             'materi',
@@ -42,10 +30,6 @@ class MateriModulController extends Controller
         ));
     }
 
-
-    /**
-     * Simpan modul baru
-     */
     public function store(Request $request, Materi $materi)
     {
         $this->authorizeRole();
@@ -57,7 +41,6 @@ class MateriModulController extends Controller
             'status'      => 'required|in:aktif,nonaktif',
         ]);
 
-        // simpan file
         $path = $request->file('file_pdf')
             ->store('materi/' . $materi->id, 'public');
 
@@ -74,9 +57,6 @@ class MateriModulController extends Controller
             ->with('success', 'Modul berhasil ditambahkan');
     }
 
-    /**
-     * Update modul
-     */
     public function update(Request $request, MateriModul $modul)
     {
         $this->authorizeRole();
@@ -88,7 +68,6 @@ class MateriModulController extends Controller
             'status'      => 'required|in:aktif,nonaktif',
         ]);
 
-        // jika upload file baru
         if ($request->hasFile('file_pdf')) {
             if ($modul->file_pdf && Storage::disk('public')->exists($modul->file_pdf)) {
                 Storage::disk('public')->delete($modul->file_pdf);
@@ -109,9 +88,6 @@ class MateriModulController extends Controller
             ->with('success', 'Modul berhasil diperbarui');
     }
 
-    /**
-     * Download PDF (Admin & Instruktur saja)
-     */
     public function download(MateriModul $modul)
     {
         $this->authorizeRole();
@@ -126,9 +102,6 @@ class MateriModulController extends Controller
         );
     }
 
-    /**
-     * Hapus modul
-     */
     public function destroy(MateriModul $modul)
     {
         $this->authorizeRole();
@@ -145,21 +118,18 @@ class MateriModulController extends Controller
             ->with('success', 'Modul berhasil dihapus');
     }
 
-    /**
-     * Validasi role Admin & Instruktur
-     */
     private function authorizeRole()
     {
         $user = auth()->user();
 
-        if (!$user || !in_array($user->role, ['admin', 'instruktur'])) {
+        if (!$user || !in_array($user->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris', 'instruktur'])) {
             abort(403, 'Anda tidak memiliki akses');
         }
     }
 
     public function preview(MateriModul $modul)
     {
-        $this->authorizeRole(); // admin & instruktur saja
+        $this->authorizeRole();
 
         $path = storage_path('app/public/' . $modul->file_pdf);
 

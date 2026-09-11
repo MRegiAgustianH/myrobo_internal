@@ -14,6 +14,9 @@ class Pembayaran extends Model
         'tanggal_bayar',
         'bulan',
         'tahun',
+        'periode',
+        'semester',
+        'tahun_ajaran',
         'jumlah',
         'status',
     ];
@@ -47,9 +50,28 @@ class Pembayaran extends Model
         return $this->jenis_peserta === 'home_private';
     }
 
+    public function isPeriode(): bool
+    {
+        return !is_null($this->periode);
+    }
+
     public function nominal()
     {
-        return $this->isHomePrivate() ? 450000 : 150000;
+        if ($this->isHomePrivate()) {
+            return 450000;
+        }
+
+        return $this->sekolah?->nominal_pembayaran ?? 150000;
+    }
+
+    public function labelPeriode(): string
+    {
+        if (!$this->isPeriode()) {
+            return 'Bulanan';
+        }
+
+        $sem = $this->semester === 'ganjil' ? 'Ganjil' : 'Genap';
+
+        return "TA {$this->tahun_ajaran} - {$sem} - Periode {$this->periode}";
     }
 }
-

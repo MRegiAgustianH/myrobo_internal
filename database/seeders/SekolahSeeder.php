@@ -48,7 +48,11 @@ class SekolahSeeder extends Seeder
             ],
         ];
 
+        $cabang = \App\Models\Cabang::where('kode_cabang', 'CJR001')->first();
+        $cabangId = $cabang ? $cabang->id : null;
+
         foreach ($data as $item) {
+            $item['cabang_id'] = $cabangId;
             Sekolah::create($item);
         }
     }

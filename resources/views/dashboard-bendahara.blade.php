@@ -12,7 +12,7 @@ Dashboard Bendahara
     {{-- UANG MASUK --}}
     <div class="bg-white rounded-xl p-6 shadow-sm border">
         <p class="text-xs text-gray-500 uppercase mb-1">
-            Uang Masuk ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+            Uang Masuk ({{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }})
         </p>
         <p class="text-3xl font-bold text-emerald-600">
             Rp {{ number_format($uangMasuk, 0, ',', '.') }}
@@ -22,7 +22,7 @@ Dashboard Bendahara
     {{-- UANG KELUAR --}}
     <div class="bg-white rounded-xl p-6 shadow-sm border">
         <p class="text-xs text-gray-500 uppercase mb-1">
-            Uang Keluar ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+            Uang Keluar ({{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }})
         </p>
         <p class="text-3xl font-bold text-red-600">
             Rp {{ number_format($uangKeluar, 0, ',', '.') }}
@@ -41,9 +41,11 @@ Dashboard Bendahara
 
 </div>
 
+{{-- ================= STATUS PEMBAYARAN ================= --}}
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
-    {{-- BELUM LUNAS --}}
-    <div class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
+
+    <a href="{{ route('pembayaran.index') }}?status=belum"
+       class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs text-gray-500 uppercase">Belum Lunas</p>
@@ -55,10 +57,11 @@ Dashboard Bendahara
                 <i data-feather="alert-circle" class="w-6 h-6 text-red-600"></i>
             </div>
         </div>
-    </div>
+        <p class="text-xs text-gray-400 mt-2">Klik untuk melihat detail</p>
+    </a>
 
-    {{-- LUNAS --}}
-    <div class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
+    <a href="{{ route('pembayaran.index') }}?status=lunas"
+       class="bg-white rounded-xl p-5 shadow-sm border hover:shadow-md transition">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-xs text-gray-500 uppercase">Lunas</p>
@@ -70,11 +73,14 @@ Dashboard Bendahara
                 <i data-feather="check-circle" class="w-6 h-6 text-emerald-600"></i>
             </div>
         </div>
-    </div>
+        <p class="text-xs text-gray-400 mt-2">Klik untuk melihat detail</p>
+    </a>
+
 </div>
 
-{{-- QUICK ACCESS / MANAGEMENT --}}
+{{-- ================= QUICK ACCESS ================= --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
     <div class="bg-white rounded-xl shadow-sm border p-6">
         <h3 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <i data-feather="credit-card" class="w-4 h-4"></i>
@@ -82,6 +88,12 @@ Dashboard Bendahara
         </h3>
 
         <div class="space-y-2 text-sm">
+            <a href="{{ route('keuangan.cashflow') }}"
+               class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
+                <span>Arus Kas (Cashflow)</span>
+                <i data-feather="chevron-right" class="w-4 h-4"></i>
+            </a>
+
             <a href="{{ route('pembayaran.index') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Pembayaran</span>
@@ -99,6 +111,7 @@ Dashboard Bendahara
                 <span>Rekap Pembayaran</span>
                 <i data-feather="chevron-right" class="w-4 h-4"></i>
             </a>
+
             <a href="{{ route('keuangan.index') }}"
                class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                 <span>Pengeluaran</span>
@@ -106,6 +119,7 @@ Dashboard Bendahara
             </a>
         </div>
     </div>
+
 </div>
 
 @endsection

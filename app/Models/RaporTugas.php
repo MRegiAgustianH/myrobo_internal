@@ -9,6 +9,7 @@ class RaporTugas extends Model
     protected $table = 'rapor_tugas';
 
     protected $fillable = [
+        'cabang_id',
         'sekolah_id',
         'semester_id',
         'instruktur_id',
@@ -16,11 +17,6 @@ class RaporTugas extends Model
         'deadline',
     ];
 
-    /* =====================
-     * RELATIONS
-     * ===================== */
-
-    // 1 tugas → banyak rapor
     public function rapors()
     {
         return $this->hasMany(Rapor::class);
@@ -41,11 +37,11 @@ class RaporTugas extends Model
         return $this->belongsTo(User::class, 'instruktur_id');
     }
 
-    /* =====================
-     * HELPERS
-     * ===================== */
+    public function cabang()
+    {
+        return $this->belongsTo(Cabang::class);
+    }
 
-    // Progress rapor (x / total)
     public function progress()
     {
         $total = $this->rapors()->count();

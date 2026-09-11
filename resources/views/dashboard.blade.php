@@ -110,7 +110,7 @@ Dashboard Admin
     {{-- UANG MASUK --}}
     <div class="bg-white rounded-xl p-6 shadow-sm border">
         <p class="text-xs text-gray-500 uppercase mb-1">
-            Uang Masuk ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+            Uang Masuk ({{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }})
         </p>
         <p class="text-3xl font-bold text-emerald-600">
             Rp {{ number_format($uangMasuk, 0, ',', '.') }}
@@ -120,7 +120,7 @@ Dashboard Admin
     {{-- UANG KELUAR --}}
     <div class="bg-white rounded-xl p-6 shadow-sm border">
         <p class="text-xs text-gray-500 uppercase mb-1">
-            Uang Keluar ({{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }})
+            Uang Keluar ({{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }})
         </p>
         <p class="text-3xl font-bold text-red-600">
             Rp {{ number_format($uangKeluar, 0, ',', '.') }}

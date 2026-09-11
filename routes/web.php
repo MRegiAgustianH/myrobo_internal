@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CabangController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\JadwalController;
 use App\Http\Controllers\MateriController;
@@ -34,8 +36,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::resource('sekolah', SekolahController::class);
+Route::middleware(['auth', 'role:superadmin,admin,admin_cabang'])->group(function () {
+    Route::resource('sekolah', SekolahController::class)->middleware(['permission:sekolah,read']);
+
+    Route::resource('cabang', CabangController::class);
+
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::put('/permissions', [PermissionController::class, 'update'])->name('permissions.update');
+    Route::post('/permissions/toggle-module', [PermissionController::class, 'toggleModule'])->name('permissions.toggle-module');
     
     Route::get('/sekolah/{sekolah}/peserta', [PesertaController::class, 'bySekolah'])
     ->name('peserta.bySekolah');
@@ -60,17 +68,19 @@ Route::middleware('auth')->group(function () {
     // ================= RAPOR =================
     Route::get('/rapor/manajemen',
         [RaporController::class, 'manajemen']
-    )->name('rapor.manajemen');
+    )->name('rapor.manajemen')
+    ->middleware('permission:rapor,read');
 
     Route::resource('rapor', RaporController::class)
-        ->except(['index']);
+        ->except(['index'])
+        ->middleware('permission:rapor,read');
 
     Route::get('/rapor/{rapor}/cetak',
         [RaporController::class, 'cetak']
     )->name('rapor.cetak');
 });
 
-Route::prefix('admin')->middleware(['auth', 'role:admin,sekretaris'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'role:superadmin,admin,admin_cabang,sekretaris'])->group(function () {
 
         Route::get('/rapor-tugas', 
             [RaporTugasController::class, 'index']
@@ -84,9 +94,21 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sekretaris'])->group(fun
             [RaporTugasController::class, 'show']
         )->name('admin.rapor-tugas.show');
 
-        Route::post('/rapor-tugas/{raporTugas}/verifikasi',
-            [RaporTugasController::class, 'verifikasi']
-        )->name('admin.rapor-tugas.verifikasi');
+        Route::get('/rapor-tugas/{raporTugas}/edit',
+            [RaporTugasController::class, 'edit']
+        )->name('admin.rapor-tugas.edit')
+        ->middleware('permission:rapor-tugas,update');
+
+        Route::put('/rapor-tugas/{raporTugas}',
+            [RaporTugasController::class, 'update']
+        )->name('admin.rapor-tugas.update')
+        ->middleware('permission:rapor-tugas,update');
+
+        Route::delete('/rapor-tugas/{raporTugas}',
+            [RaporTugasController::class, 'destroy']
+        )->name('admin.rapor-tugas.destroy')
+        ->middleware('permission:rapor-tugas,delete');
+
     });
 
     Route::prefix('instruktur')->middleware(['auth','role:instruktur'])->group(function () {
@@ -126,7 +148,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,sekretaris'])->group(fun
 });
 
 Route::prefix('admin')
-    ->middleware(['auth','role:admin,sekretaris'])
+    ->middleware(['auth','role:superadmin,admin,admin_cabang,sekretaris'])
     ->group(function () {
 
         Route::get(
@@ -156,7 +178,7 @@ Route::prefix('admin')
 
 
 
-Route::middleware(['auth','role:admin'])->group(function () {
+Route::middleware(['auth','role:superadmin,admin,admin_cabang'])->group(function () {
 
    Route::get('/sekolah/{sekolah}/peserta',
             [PesertaController::class, 'index'])
@@ -189,30 +211,31 @@ Route::middleware(['auth','role:admin'])->group(function () {
 
 });
 
-Route::middleware(['auth','role:admin,bendahara'])->group(function () {
-        Route::resource('keuangan', KeuanganController::class)->except(['show']);
+Route::middleware(['auth','role:superadmin,admin,admin_cabang,bendahara'])->group(function () {
+        Route::get('keuangan/cashflow', [KeuanganController::class, 'cashflow'])->name('keuangan.cashflow')->middleware(['permission:keuangan,read']);
+    Route::resource('keuangan', KeuanganController::class)->except(['show'])->middleware(['permission:keuangan,read']);
         Route::get('keuangan/gaji-instruktur', [KeuanganController::class, 'gajiInstruktur'])->name('keuangan.gaji.instruktur');
         Route::post('keuangan/gaji-instruktur/bayar', [KeuanganController::class, 'bayarGajiInstruktur'])->name('keuangan.gaji.bayar');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:superadmin,admin,admin_cabang'])->group(function () {
 
         Route::resource('tarif-gaji', \App\Http\Controllers\TarifGajiController::class)
-            ->except(['show']);
+            ->except(['show'])->middleware(['permission:tarif-gaji,read']);
             
     });
 
-    Route::middleware(['auth', 'role:admin'])
+    Route::middleware(['auth', 'role:superadmin,admin,admin_cabang'])
     ->post('tarif-gaji/quick-store',
         [\App\Http\Controllers\TarifGajiController::class, 'quickStore']
     )->name('tarif-gaji.quick-store');
 
 
 
-Route::middleware(['auth','role:admin'])->group(function () {
+Route::middleware(['auth','role:superadmin,admin,admin_cabang'])->group(function () {
 
-    Route::resource('users', UserController::class);
-    Route::resource('home-private', HomePrivateController::class);
+    Route::resource('users', UserController::class)->middleware(['permission:users,read']);
+    Route::resource('home-private', HomePrivateController::class)->middleware(['permission:home-private,read']);
 
 });
 
@@ -222,16 +245,26 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/jadwal', [JadwalController::class, 'index'])
         ->name('jadwal.index');
 
-    Route::middleware('role:admin,sekretaris')->group(function () {
+    Route::middleware('role:superadmin,admin,admin_cabang,sekretaris')->group(function () {
 
         Route::post('/jadwal', [JadwalController::class, 'store'])
-            ->name('jadwal.store');
+            ->name('jadwal.store')
+            ->middleware('permission:jadwal,create');
 
-        Route::put('/jadwal/{jadwal}', [JadwalController::class, 'update'])
-            ->name('jadwal.update');
+        Route::match(['PATCH', 'POST', 'PUT'], '/jadwal/{jadwal}/batalkan',
+            [JadwalController::class, 'batalkan']
+        )->name('jadwal.batalkan')
+        ->middleware('permission:jadwal,update')
+        ->where('jadwal', '[0-9]+');
+
+        Route::match(['PUT', 'POST'], '/jadwal/{jadwal?}', [JadwalController::class, 'update'])
+            ->name('jadwal.update')
+            ->middleware('permission:jadwal,update')
+            ->where('jadwal', '[0-9]+');
 
         Route::delete('/jadwal/{jadwal}', [JadwalController::class, 'destroy'])
-            ->name('jadwal.destroy');
+            ->name('jadwal.destroy')
+            ->middleware('permission:jadwal,delete');
             
         Route::post('/jadwal/recurring', [JadwalController::class, 'storeRecurring'])
             ->name('jadwal.recurring');
@@ -241,13 +274,23 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/absensi/jadwal/{jadwal}', [AbsensiController::class, 'index'])
-        ->name('absensi.index');
+        ->name('absensi.index')
+        ->middleware('permission:absensi,read');
 
     Route::post('/absensi/jadwal/{jadwal}', [AbsensiController::class, 'store'])
-        ->name('absensi.store');
+        ->name('absensi.store')
+        ->middleware('permission:absensi,create');
 
     Route::post('jadwal/{jadwal}/absensi-instruktur', [\App\Http\Controllers\AbsensiInstrukturController::class, 'store'])->name('instruktur.absensi.store');
 
+});
+
+// CRUD absensi oleh admin/sekretaris
+Route::middleware(['auth', 'role:superadmin,admin,admin_cabang,sekretaris'])->group(function () {
+    Route::put('/absensi/{absensi}', [AbsensiController::class, 'update'])->name('absensi.update');
+    Route::delete('/absensi/{absensi}', [AbsensiController::class, 'destroy'])->name('absensi.destroy');
+    Route::put('/absensi-instruktur/{absensiInstruktur}', [\App\Http\Controllers\AbsensiInstrukturController::class, 'update'])->name('absensi-instruktur.update');
+    Route::delete('/absensi-instruktur/{absensiInstruktur}', [\App\Http\Controllers\AbsensiInstrukturController::class, 'destroy'])->name('absensi-instruktur.destroy');
 });
 
 // Route::get('/materi/modul/{modul}/download',[MateriModulController::class, 'download'])->name('materi.modul.download')->middleware('auth');
@@ -255,20 +298,27 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::get('/rekap-absensi/filter', [AbsensiController::class, 'rekapFilter'])
-    ->name('absensi.rekap.filter');
+    ->name('absensi.rekap.filter')
+    ->middleware('permission:absensi,read');
 
 Route::get('/absensi/rekap/export-pdf', 
     [AbsensiController::class, 'exportRekapPdf']
 )->name('absensi.rekap.export-pdf');
 
+Route::get('/absensi/rekap/export-excel',
+    [AbsensiController::class, 'exportRekapExcel']
+)->name('absensi.rekap.export-excel');
+
 Route::middleware(['auth'])->group(function () {
 
     // Input pembayaran bulanan
     Route::get('/pembayaran', [PembayaranController::class, 'index'])
-        ->name('pembayaran.index');
+        ->name('pembayaran.index')
+        ->middleware('permission:pembayaran,read');
 
     Route::post('/pembayaran', [PembayaranController::class, 'store'])
-        ->name('pembayaran.store');
+        ->name('pembayaran.store')
+        ->middleware('permission:pembayaran,create');
 
     // Rekap pembayaran
     Route::get('/pembayaran/rekap', [PembayaranController::class, 'rekap'])
@@ -277,6 +327,9 @@ Route::middleware(['auth'])->group(function () {
     // Export PDF rekap
     Route::get('/pembayaran/rekap/export-pdf', [PembayaranController::class, 'exportRekapPdf'])
         ->name('pembayaran.rekap.export-pdf');
+
+    Route::get('/pembayaran/rekap/export-excel', [PembayaranController::class, 'exportRekapExcel'])
+        ->name('pembayaran.rekap.export-excel');
 
     Route::get('/pembayaran/invoice', [PembayaranController::class, 'invoiceForm'])
         ->name('pembayaran.invoice.form');
@@ -289,21 +342,25 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::prefix('admin')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'role:superadmin,admin,admin_cabang,sekretaris,instruktur'])
     ->group(function () {
 
     /* ================= MATERI ================= */
     Route::get('materi', [MateriController::class, 'index'])
-        ->name('admin.materi.index');
+        ->name('admin.materi.index')
+        ->middleware('permission:materi,read');
 
     Route::post('materi', [MateriController::class, 'store'])
-        ->name('admin.materi.store');
+        ->name('admin.materi.store')
+        ->middleware('permission:materi,create');
 
     Route::put('materi/{materi}', [MateriController::class, 'update'])
-        ->name('admin.materi.update');
+        ->name('admin.materi.update')
+        ->middleware('permission:materi,update');
 
     Route::delete('materi/{materi}', [MateriController::class, 'destroy'])
-        ->name('admin.materi.destroy');
+        ->name('admin.materi.destroy')
+        ->middleware('permission:materi,delete');
 
     /* ================= MODUL ================= */
     Route::get('materi/{materi}/modul', [MateriModulController::class, 'index'])
@@ -368,3 +425,4 @@ Route::prefix('admin')
 
 
 require __DIR__.'/auth.php';
+

@@ -162,31 +162,31 @@
                     <div class="flex items-center justify-center gap-2">
 
                         <a href="{{ route('admin.rapor.verifikasi.show', $r->id) }}"
-                           class="inline-flex items-center gap-1
-                                  px-3 py-1.5 rounded-lg
-                                  text-xs font-medium
-                                  border border-indigo-200
-                                  text-indigo-600 hover:bg-indigo-50">
-                            <i data-feather="eye" class="w-3 h-3"></i>
+                           class="inline-flex items-center gap-1.5
+                                  px-3 py-1.5 rounded-lg text-xs font-medium
+                                  @if(in_array($r->status, ['submitted','revision']))
+                                  bg-green-600 hover:bg-green-700 text-white shadow-sm
+                                  @else
+                                  bg-[#8FBFC2]/20 hover:bg-[#8FBFC2]/40 text-[#4A7C80] border border-[#8FBFC2]/30
+                                  @endif
+                                  transition">
+                            <i data-feather="eye" class="w-3.5 h-3.5"></i>
+                            @if(in_array($r->status, ['submitted','revision']))
+                            Verifikasi
+                            @else
                             Lihat
+                            @endif
                         </a>
 
-                        @if(in_array($r->status, ['submitted','revision']))
-                        <a href="{{ route('admin.rapor.verifikasi.show', $r->id) }}"
-                           class="inline-flex items-center gap-1
-                                  px-3 py-1.5 rounded-lg
-                                  text-xs font-medium
-                                  bg-green-600 hover:bg-green-700
-                                  text-white">
-                            <i data-feather="check" class="w-3 h-3"></i>
-                            Verifikasi
+                        @if($r->status === 'approved')
+                        <a href="{{ route('rapor.cetak', $r->id) }}" target="_blank"
+                           class="inline-flex items-center gap-1.5
+                                  px-3 py-1.5 rounded-lg text-xs font-medium
+                                  bg-[#8FBFC2] hover:bg-[#6FA9AD] text-gray-900
+                                  transition shadow-sm">
+                            <i data-feather="printer" class="w-3.5 h-3.5"></i>
+                            Cetak
                         </a>
-                        @elseif($r->status === 'approved')
-                        <span class="inline-flex items-center gap-1
-                                     text-xs text-green-600 font-medium">
-                            <i data-feather="check-circle" class="w-3 h-3"></i>
-                            Disetujui
-                        </span>
                         @endif
 
                     </div>
@@ -223,17 +223,14 @@
         {{ $jumlahSubmitted }} rapor siap diverifikasi
     </p>
 
-    <form method="POST"
-          action="{{ route('admin.rapor.verifikasi.approveAll', $raporTugas->id) }}"
-          onsubmit="return confirm('Setujui SEMUA rapor yang sudah disubmit?')">
+        <form id="verifAllForm" method="POST" action="{{ route('admin.rapor.verifikasi.approveAll', $raporTugas->id) }}">
         @csrf
         @method('PATCH')
-
-        <button
+        <button type="button" onclick="confirmApproveAll()"
             class="flex items-center gap-2
                    bg-green-600 hover:bg-green-700
                    text-white px-6 py-2.5 rounded-xl
-                   text-sm font-semibold">
+                   text-sm font-semibold shadow-sm transition">
             <i data-feather="check-square" class="w-4 h-4"></i>
             Verifikasi Semua
         </button>
@@ -242,4 +239,46 @@
 </div>
 @endif
 
+<form id="deleteForm" method="POST" style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+
+<script>
+function confirmDeleteTugas(id) {
+    Swal.fire({
+        title: 'Hapus Tugas Rapor?',
+        text: "Semua data rapor peserta dalam tugas ini akan dihapus secara permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('deleteForm');
+            form.action = `/admin/rapor-tugas/${id}`;
+            form.submit();
+        }
+    });
+}
+
+function confirmApproveAll() {
+    Swal.fire({
+        title: 'Verifikasi Semua Rapor?',
+        text: "Setujui seluruh rapor peserta yang berstatus Submitted?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#22c55e',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Setujui Semua!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('verifAllForm').submit();
+        }
+    });
+}
+</script>
 @endsection

@@ -31,7 +31,7 @@ Gaji Instruktur
             Penggajian Instruktur
         </h2>
         <p class="text-sm text-gray-500">
-            Periode {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }}
+            Periode {{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }}
         </p>
     </div>
 
@@ -258,7 +258,7 @@ Gaji Instruktur
                 </span>
             </p>
             <p class="text-xs text-gray-500 mt-1">
-                Periode {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }} {{ $tahun }}
+                Periode {{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }} {{ $tahun }}
             </p>
         </div>
 

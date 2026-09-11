@@ -11,6 +11,8 @@ class AdminRaporVerifikasiController extends Controller
 {
     public function show(Rapor $rapor)
     {
+        $this->authorizeRapor($rapor);
+
         $rapor->load([
             'peserta',
             'sekolah',
@@ -23,6 +25,8 @@ class AdminRaporVerifikasiController extends Controller
 
     public function approve(Rapor $rapor)
     {
+        $this->authorizeRapor($rapor);
+
         DB::transaction(function () use ($rapor) {
 
             $rapor->update([
@@ -48,6 +52,7 @@ class AdminRaporVerifikasiController extends Controller
 
     public function revision(Request $request, Rapor $rapor)
     {
+        $this->authorizeRapor($rapor);
         $request->validate([
             'catatan_revisi' => 'required|string'
         ]);
@@ -66,6 +71,8 @@ class AdminRaporVerifikasiController extends Controller
 
     public function approveAll(RaporTugas $raporTugas)
     {
+        $this->authorizeRaporTugas($raporTugas);
+
         DB::transaction(function () use ($raporTugas) {
 
             // approve semua rapor yang submitted
@@ -93,4 +100,42 @@ class AdminRaporVerifikasiController extends Controller
         );
     }
 
+
+    private function authorizeRapor(Rapor $rapor): void
+    {
+        $user = auth()->user();
+
+        if ($user->role === 'superadmin') {
+            return;
+        }
+
+        if (in_array($user->role, ['admin_cabang', 'sekretaris'])) {
+            $cabangId = $rapor->tugas?->cabang_id ?? $rapor->sekolah?->cabang_id;
+            abort_if($cabangId !== $user->cabang_id, 403);
+            return;
+        }
+
+        if ($user->role === 'admin' ) {
+            return;
+        }
+
+        abort(403);
+    }
+
+    private function authorizeRaporTugas(RaporTugas $raporTugas): void
+    {
+        $user = auth()->user();
+
+        if ($user->role === 'superadmin' || $user->role === 'admin') {
+            return;
+        }
+
+        if (in_array($user->role, ['admin_cabang', 'sekretaris'])) {
+            $cabangId = $raporTugas->cabang_id ?? $raporTugas->sekolah?->cabang_id;
+            abort_if($cabangId !== $user->cabang_id, 403);
+            return;
+        }
+
+        abort(403);
+    }
 }

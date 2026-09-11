@@ -184,6 +184,8 @@ Peserta – {{ $sekolah->nama_sekolah }}
     </table>
 </div>
 
+<div class="mt-4">{{$pesertas->links()}}</div>
+
 {{-- ================= MODAL TAMBAH & EDIT ================= --}}
 <div id="pesertaModal"
      class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center">

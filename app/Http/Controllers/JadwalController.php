@@ -7,6 +7,7 @@ use App\Models\Jadwal;
 use App\Models\Materi;
 use App\Models\Sekolah;
 use App\Models\HomePrivate;
+use App\Models\Cabang;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,21 +17,33 @@ class JadwalController extends Controller
 {
     public function index()
     {
-        $sekolahs     = Sekolah::all();
-        $homePrivates = HomePrivate::aktif()->get();
-        $instrukturs  = User::where('role', 'instruktur')->get();
+        $user = auth()->user();
+        $cabangId = null;
+
+        if ($user->role === 'admin_cabang' || $user->role === 'bendahara' || $user->role === 'sekretaris') {
+            $cabangId = $user->cabang_id;
+        } elseif ($user->role === 'superadmin' && request('cabang_id')) {
+            $cabangId = request('cabang_id');
+        }
+
+        $sekolahs     = Sekolah::when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))->get();
+        $homePrivates = HomePrivate::aktif()->when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))->get();
+        $instrukturs  = User::where('role', 'instruktur')
+            ->when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))
+            ->get();
         $materis      = Materi::where('status', 'aktif')->get();
 
         // ===============================
         // ROLE-BASED JADWAL
         // ===============================
-        if (auth()->user()->role === 'instruktur') {
-            $jadwals = auth()->user()
-                ->jadwals()
+        if ($user->role === 'instruktur') {
+            $jadwals = $user->jadwals()
                 ->with(['sekolah', 'homePrivate', 'instrukturs', 'materis'])
                 ->get();
         } else {
-            $jadwals = Jadwal::with(['sekolah', 'homePrivate', 'instrukturs', 'materis'])->get();
+            $jadwals = Jadwal::with(['sekolah', 'homePrivate', 'instrukturs', 'materis'])
+                ->when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))
+                ->get();
         }
 
         // ===============================
@@ -41,6 +54,7 @@ class JadwalController extends Controller
         foreach ($jadwals as $j) {
             $jadwalMap[$j->id] = [
                 'id' => $j->id,
+                'cabang_id' => $j->cabang_id,
 
                 'jenis_jadwal' => $j->jenis_jadwal,
 
@@ -68,13 +82,16 @@ class JadwalController extends Controller
             ];
         }
 
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
+
         return view('jadwal.index', compact(
             'jadwals',
             'sekolahs',
             'homePrivates',
             'instrukturs',
             'materis',
-            'jadwalMap'
+            'jadwalMap',
+            'cabangs'
         ));
     }
 
@@ -152,8 +169,12 @@ class JadwalController extends Controller
         ]);
     }
 
-    public function update(Request $request, Jadwal $jadwal)
+    public function update(Request $request, ?Jadwal $jadwal = null)
     {
+        if (!$jadwal || !$jadwal->exists) {
+            $id = $request->id ?? $request->jadwal_id ?? $request->route('jadwal');
+            $jadwal = Jadwal::findOrFail($id);
+        }
         $request->validate([
             'jenis_jadwal' => 'required|in:sekolah,home_private',
 
@@ -175,7 +196,7 @@ class JadwalController extends Controller
             'materis'   => 'nullable|array|max:2',
             'materis.*' => 'exists:materis,id',
 
-            'status' => 'nullable|in:aktif,nonaktif',
+            'status' => 'nullable|in:aktif,nonaktif,dibatalkan',
         ]);
 
         // ===============================
@@ -206,6 +227,7 @@ class JadwalController extends Controller
         // UPDATE JADWAL
         // ===============================
         $jadwal->update([
+            'cabang_id'       => $request->cabang_id ?? auth()->user()->cabang_id,
             'jenis_jadwal'    => $request->jenis_jadwal,
             'sekolah_id'      => $request->jenis_jadwal === 'sekolah'
                                 ? $request->sekolah_id
@@ -289,6 +311,15 @@ class JadwalController extends Controller
             }
         }
 
+        // ===============================
+        // SKIP TANGGAL LIBUR / ACARA SEKOLAH
+        // ===============================
+        $skipDates = [];
+        if ($request->filled('skip_dates')) {
+            $skipDates = array_filter(array_map('trim', explode("\n", $request->skip_dates)));
+        }
+        $tanggalList = array_values(array_diff($tanggalList, $skipDates));
+
         if (count($tanggalList) === 0) {
             throw ValidationException::withMessages([
                 'hari' => 'Tidak ada tanggal yang sesuai dalam rentang tersebut.'
@@ -327,6 +358,7 @@ class JadwalController extends Controller
 
             foreach ($tanggalList as $tanggal) {
                 $jadwal = Jadwal::create([
+                    'cabang_id'       => $request->cabang_id ?? auth()->user()->cabang_id,
                     'jenis_jadwal'    => $request->jenis_jadwal,
                     'sekolah_id'      => $request->jenis_jadwal === 'sekolah'
                         ? $request->sekolah_id
@@ -353,5 +385,18 @@ class JadwalController extends Controller
             'message' => 'Jadwal ' . $request->mode . ' berhasil dibuat',
             'total_pertemuan' => count($tanggalList)
         ]);
+    }
+    public function batalkan(Request $request, ?Jadwal $jadwal = null)
+    {
+        if (!$jadwal || !$jadwal->exists) {
+            $id = $request->id ?? $request->jadwal_id ?? $request->route('jadwal');
+            $jadwal = Jadwal::findOrFail($id);
+        }
+
+        $jadwal->update([
+            'status' => 'dibatalkan'
+        ]);
+
+        return back()->with('success', 'Jadwal berhasil ditandai sebagai dibatalkan.');
     }
 }

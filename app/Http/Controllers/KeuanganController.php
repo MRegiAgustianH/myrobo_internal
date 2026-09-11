@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Keuangan;
+use App\Models\Cabang;
 use App\Models\User;
 use App\Models\AbsensiInstruktur;
 use App\Models\HomePrivate;
@@ -29,9 +30,16 @@ class KeuanganController extends Controller
             $query->where('sekolah_id', $user->sekolah_id);
         }
 
-        $pengeluarans = $query->paginate(15);
+        if ($user->role === 'admin_cabang') {
+            $query->where('cabang_id', $user->cabang_id);
+        } elseif ($user->role === 'superadmin' && request('cabang_id')) {
+            $query->where('cabang_id', request('cabang_id'));
+        }
 
-        return view('keuangan.index', compact('pengeluarans'));
+        $pengeluarans = $query->paginate(15);
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
+
+        return view('keuangan.index', compact('pengeluarans', 'cabangs'));
     }
 
     /*
@@ -47,23 +55,34 @@ class KeuanganController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'tanggal'  => 'required|date',
-            'kategori' => 'required|string',
-            'jumlah'   => 'required|numeric|min:0',
+            'tanggal'   => 'required|date',
+            'tipe'      => 'required|in:masuk,keluar',
+            'kategori'  => 'required|string',
+            'jumlah'    => 'required|numeric|min:0',
+            'cabang_id' => 'nullable|exists:cabangs,id',
+            'sekolah_id'=> 'nullable|exists:sekolahs,id',
         ]);
 
+        $user = auth()->user();
+        $cabangId = $request->cabang_id;
+        
+        if ($user->role === 'admin_cabang' || $user->role === 'bendahara' || $user->role === 'sekretaris') {
+            $cabangId = $user->cabang_id;
+        }
+
         Keuangan::create([
+            'cabang_id'  => $cabangId ?? $user->cabang_id,
             'tanggal'    => $request->tanggal,
-            'tipe'       => 'keluar',
+            'tipe'       => $request->tipe,
             'kategori'   => $request->kategori,
             'deskripsi'  => $request->deskripsi,
             'jumlah'     => $request->jumlah,
-            'sekolah_id' => auth()->user()->sekolah_id,
+            'sekolah_id' => $request->sekolah_id,
         ]);
 
-        return redirect()
-            ->route('keuangan.index')
-            ->with('success', 'Pengeluaran berhasil ditambahkan');
+        $msg = $request->tipe === 'masuk' ? 'Pemasukan / Saldo awal berhasil disimpan.' : 'Pengeluaran berhasil ditambahkan.';
+
+        return back()->with('success', $msg);
     }
 
     /*
@@ -85,10 +104,13 @@ class KeuanganController extends Controller
         ]);
 
         $keuangan->update([
-            'tanggal'   => $request->tanggal,
-            'kategori'  => $request->kategori,
-            'deskripsi' => $request->deskripsi,
-            'jumlah'    => $request->jumlah,
+            'cabang_id'  => $request->cabang_id ?? $keuangan->cabang_id,
+            'tanggal'    => $request->tanggal,
+            'tipe'       => $request->tipe ?? $keuangan->tipe,
+            'kategori'   => $request->kategori,
+            'deskripsi'  => $request->deskripsi,
+            'jumlah'     => $request->jumlah,
+            'sekolah_id' => $request->sekolah_id ?? $keuangan->sekolah_id,
         ]);
 
         return redirect()
@@ -305,5 +327,76 @@ class KeuanganController extends Controller
 
 
         return back()->with('success', 'Gaji instruktur berhasil dibayarkan');
+    }
+    /*
+    |==================================================
+    | CASHFLOW (ARUS KAS MASUK & KELUAR)
+    |==================================================
+    */
+    public function cashflow(Request $request)
+    {
+        $user = auth()->user();
+        $bulan = $request->bulan ?? now()->month;
+        $tahun = $request->tahun ?? now()->year;
+
+        $cabangs = Cabang::orderBy('nama_cabang')->get();
+        $cabangId = null;
+
+        if ($user->role === 'superadmin') {
+            $cabangId = $request->cabang_id;
+        } elseif (in_array($user->role, ['admin_cabang', 'bendahara', 'sekretaris'])) {
+            $cabangId = $user->cabang_id;
+        }
+
+        // Base Query untuk total saldo & hitungan page ini
+        $queryBase = Keuangan::query()
+            ->when($cabangId, fn($q) => $q->where('cabang_id', $cabangId));
+
+        // Hitung total saldo secara keseluruhan (all time)
+        $totalMasukAll = (clone $queryBase)->where('tipe', 'masuk')->sum('jumlah');
+        $totalKeluarAll = (clone $queryBase)->where('tipe', 'keluar')->sum('jumlah');
+        $saldoAll = $totalMasukAll - $totalKeluarAll;
+
+        // Query transaksi untuk bulan & tahun terpilih
+        $query = Keuangan::with('sekolah')
+            ->when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))
+            ->whereMonth('tanggal', $bulan)
+            ->whereYear('tanggal', $tahun)
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('id', 'desc');
+
+        $transaksis = $query->paginate(15)->withQueryString();
+
+        // Hitung total rekap bulanan
+        $queryBulan = Keuangan::when($cabangId, fn($q) => $q->where('cabang_id', $cabangId))
+            ->whereMonth('tanggal', $bulan)
+            ->whereYear('tanggal', $tahun);
+
+        $totalMasukBulan = (clone $queryBulan)->where('tipe', 'masuk')->sum('jumlah');
+        $totalKeluarBulan = (clone $queryBulan)->where('tipe', 'keluar')->sum('jumlah');
+        $saldoBulan = $totalMasukBulan - $totalKeluarBulan;
+
+        // Breakdown pemasukan per kategori (bulan ini)
+        $masukDetail = (clone $queryBulan)
+            ->where('tipe', 'masuk')
+            ->selectRaw('kategori, SUM(jumlah) as total')
+            ->groupBy('kategori')
+            ->pluck('total', 'kategori')
+            ->toArray();
+
+        // Breakdown pengeluaran per kategori (bulan ini)
+        $keluarDetail = (clone $queryBulan)
+            ->where('tipe', 'keluar')
+            ->selectRaw('kategori, SUM(jumlah) as total')
+            ->groupBy('kategori')
+            ->pluck('total', 'kategori')
+            ->toArray();
+
+        return view('keuangan.cashflow', compact(
+            'transaksis', 'cabangs', 'cabangId', 'bulan', 'tahun',
+            'totalMasukAll', 'totalKeluarAll', 'saldoAll',
+            'totalMasukBulan', 'totalKeluarBulan', 'saldoBulan',
+            'masukDetail', 'keluarDetail'
+        ));
     }
 }

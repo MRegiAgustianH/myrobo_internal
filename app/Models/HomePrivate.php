@@ -11,10 +11,8 @@ class HomePrivate extends Model
 
     protected $table = 'home_privates';
 
-    /**
-     * Kolom yang boleh diisi mass-assignment
-     */
     protected $fillable = [
+        'cabang_id',
         'nama_kegiatan',
         'nama_peserta',
         'nama_wali',
@@ -24,47 +22,29 @@ class HomePrivate extends Model
         'status',
     ];
 
-    /**
-     * Default attribute
-     */
     protected $attributes = [
         'status' => 'aktif',
     ];
 
-    /**
-     * Cast tipe data
-     */
     protected $casts = [
         'status' => 'string',
     ];
 
-    /* =====================================================
-     | RELATIONSHIPS
-     |=====================================================*/
+    public function cabang()
+    {
+        return $this->belongsTo(Cabang::class);
+    }
 
-    /**
-     * Home Private bisa memiliki banyak jadwal
-     */
     public function jadwals()
     {
         return $this->hasMany(Jadwal::class);
     }
 
-    /* =====================================================
-     | SCOPES
-     |=====================================================*/
-
-    /**
-     * Scope hanya data aktif
-     */
     public function scopeAktif($query)
     {
         return $query->where('status', 'aktif');
     }
 
-    /**
-     * Scope pencarian sederhana
-     */
     public function scopeSearch($query, $keyword)
     {
         if (!$keyword) return $query;

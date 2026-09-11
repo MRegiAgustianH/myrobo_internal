@@ -154,6 +154,7 @@
                 <td>
                     {{ $pembayarans->count() }}
                     {{ $isHomePrivate ? 'Sesi Home Private' : 'Peserta' }}
+                    <br><span class="text-xs">Periode: {{ $label ?? '' }}</span>
                 </td>
                 <td>
                     Rp {{ number_format($total, 0, ',', '.') }},-

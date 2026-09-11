@@ -2,14 +2,12 @@
 
 namespace App\Models;
 
-namespace App\Models;
-
 use Illuminate\Database\Eloquent\Model;
 
 class NilaiRapor extends Model
 {
+    protected $table = 'rapor_nilais';
 
-    protected $table = 'rapor_nilais';  
     protected $fillable = [
         'rapor_id',
         'indikator_kompetensi_id',
@@ -25,6 +23,4 @@ class NilaiRapor extends Model
     {
         return $this->belongsTo(IndikatorKompetensi::class);
     }
-
 }
-

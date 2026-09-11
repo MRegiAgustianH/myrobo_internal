@@ -14,9 +14,6 @@ class AbsensiInstrukturController extends Controller
      */
     public function store(Request $request, Jadwal $jadwal)
     {
-        // ===============================
-        // AUTH: HANYA INSTRUKTUR TERJADWAL
-        // ===============================
         if (
             auth()->user()->role !== 'instruktur' ||
             !$jadwal->instrukturs->contains(auth()->id())
@@ -24,17 +21,11 @@ class AbsensiInstrukturController extends Controller
             abort(403);
         }
 
-        // ===============================
-        // VALIDASI
-        // ===============================
         $request->validate([
             'status'     => 'required|in:hadir,izin,sakit,alfa',
             'keterangan' => 'nullable|string|max:255',
         ]);
 
-        // ===============================
-        // BATAS WAKTU ABSENSI
-        // ===============================
         if (
             auth()->user()->isInstruktur() &&
             !$jadwal->isDalamJamAbsensi()
@@ -42,9 +33,7 @@ class AbsensiInstrukturController extends Controller
             return back()->with('error', 'Absensi instruktur hanya bisa diisi saat jam jadwal.');
         }
 
-
         DB::transaction(function () use ($request, $jadwal) {
-
             AbsensiInstruktur::updateOrCreate(
                 [
                     'jadwal_id'      => $jadwal->id,
@@ -59,5 +48,37 @@ class AbsensiInstrukturController extends Controller
         });
 
         return back()->with('success', 'Absensi instruktur berhasil disimpan');
+    }
+
+    /* =====================================================
+     | CRUD ABSENSI INSTRUKTUR (ADMIN & SEKRETARIS)
+     ===================================================== */
+
+    public function update(Request $request, AbsensiInstruktur $absensiInstruktur)
+    {
+        if (!in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris'])) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status'     => 'required|in:hadir,izin,sakit,alfa',
+            'keterangan' => 'nullable|string|max:255',
+            'tanggal'    => 'required|date',
+        ]);
+
+        $absensiInstruktur->update($data);
+
+        return back()->with('success', 'Absensi instruktur berhasil diperbarui.');
+    }
+
+    public function destroy(AbsensiInstruktur $absensiInstruktur)
+    {
+        if (!in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris'])) {
+            abort(403);
+        }
+
+        $absensiInstruktur->delete();
+
+        return back()->with('success', 'Absensi instruktur berhasil dihapus.');
     }
 }

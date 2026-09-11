@@ -7,14 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Sekolah extends Model
 {
-    //
-    Use HasFactory;
+    use HasFactory;
+
     protected $fillable = [
+        'cabang_id',
         'nama_sekolah',
         'alamat',
-        // 'logo,',
         'kontak',
+        'logo',
         'nominal_pembayaran',
+        'jumlah_periode',
+        'pertemuan_per_periode',
         'tgl_mulai_kerjasama',
         'tgl_akhir_kerjasama',
     ];
@@ -23,6 +26,11 @@ class Sekolah extends Model
         'tgl_mulai_kerjasama' => 'date',
         'tgl_akhir_kerjasama' => 'date',
     ];
+
+    public function cabang()
+    {
+        return $this->belongsTo(Cabang::class);
+    }
 
     public function pesertas()
     {
@@ -43,6 +51,4 @@ class Sekolah extends Model
     {
         return $this->hasMany(RaporTugas::class);
     }
-
-
 }

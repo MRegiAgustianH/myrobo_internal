@@ -35,8 +35,8 @@
         $hover  = 'hover:bg-white/80 hover:translate-x-1';
     @endphp
 
-    {{-- ================= ADMIN SISTEM ================= --}}
-    @if(Auth::user()->isAdmin())
+    {{-- ================= ADMIN / SUPERADMIN / ADMIN CABANG ================= --}}
+    @if(in_array(Auth::user()->role, ['superadmin', 'admin', 'admin_cabang']))
 
     <div>
         <p class="text-[11px] uppercase tracking-wider text-gray-700 mb-2 px-3">
@@ -49,19 +49,32 @@
             Dashboard
         </a>
 
-        <a href="{{ route('sekolah.index') }}"
+        <a href="{{ route('sekolah.index') }}" data-module="sekolah"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('sekolah.*') ? $active : $hover }}">
             <i data-feather="grid" class="w-4 h-4"></i>
             Sekolah
         </a>
 
-        <a href="{{ route('users.index') }}"
+        @if(Auth::user()->role === 'superadmin')
+        <a href="{{ route('cabang.index') }}" data-module="cabang"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('cabang.*') ? $active : $hover }}">
+            <i data-feather="map-pin" class="w-4 h-4"></i>
+            Cabang
+        </a>
+        <a href="{{ route('permissions.index') }}"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('permissions.*') ? $active : $hover }}">
+            <i data-feather="shield" class="w-4 h-4"></i>
+            Hak Akses
+        </a>
+        @endif
+
+        <a href="{{ route('users.index') }}" data-module="users"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('users.*') ? $active : $hover }}">
             <i data-feather="users" class="w-4 h-4"></i>
             User
         </a>
 
-        <a href="{{ route('home-private.index') }}"
+        <a href="{{ route('home-private.index') }}" data-module="home-private"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('home-private.*') ? $active : $hover }}">
             <i data-feather="globe" class="w-4 h-4"></i>
             Home Private
@@ -73,13 +86,13 @@
             Penjadwalan
         </p>
 
-        <a href="{{ route('admin.materi.index') }}"
+        <a href="{{ route('admin.materi.index') }}" data-module="materi"
            class="{{ $menuClass }} {{ request()->routeIs('materi.*') ? $active : $hover }}">
             <i data-feather="book-open" class="w-4 h-4"></i>
             Materi
         </a>
 
-        <a href="{{ route('jadwal.index') }}"
+        <a href="{{ route('jadwal.index') }}" data-module="jadwal"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('jadwal.*') ? $active : $hover }}">
             <i data-feather="calendar" class="w-4 h-4"></i>
             Jadwal
@@ -91,19 +104,25 @@
             Keuangan
         </p>
 
-        <a href="{{ route('keuangan.index') }}"
-           class="{{ $menuClass }} {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+        <a href="{{ route('keuangan.cashflow') }}" data-module="keuangan"
+           class="{{ $menuClass }} {{ request()->routeIs('keuangan.cashflow') ? $active : $hover }}">
             <i data-feather="activity" class="w-4 h-4"></i>
+            Arus Kas (Cashflow)
+        </a>
+
+        <a href="{{ route('keuangan.index') }}" data-module="keuangan"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+            <i data-feather="arrow-up-right" class="w-4 h-4"></i>
             Pengeluaran
         </a>
 
-        <a href="{{ route('pembayaran.index') }}"
+        <a href="{{ route('pembayaran.index') }}" data-module="pembayaran"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.index') ? $active : $hover }}">
             <i data-feather="credit-card" class="w-4 h-4"></i>
             Pembayaran
         </a>
 
-        <a href="{{ route('pembayaran.invoice.form') }}"
+        <a href="{{ route('pembayaran.invoice.form') }}" data-module="pembayaran"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.invoice.*') ? $active : $hover }}">
             <i data-feather="file-text" class="w-4 h-4"></i>
             Cetak Invoice
@@ -115,19 +134,19 @@
             Laporan
         </p>
 
-        <a href="{{ route('admin.rapor-tugas.index') }}"
+        <a href="{{ route('admin.rapor-tugas.index') }}" data-module="rapor-tugas"
            class="{{ $menuClass }} {{ request()->routeIs('admin.rapor-tugas.*') ? $active : $hover }}">
             <i data-feather="bar-chart-2" class="w-4 h-4"></i>
             Penugasan Rapor
         </a>
 
-        <a href="{{ route('absensi.rekap.filter') }}"
+        <a href="{{ route('absensi.rekap.filter') }}" data-module="absensi"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('absensi.rekap.*') ? $active : $hover }}">
             <i data-feather="clipboard" class="w-4 h-4"></i>
             Rekap Absensi
         </a>
 
-        <a href="{{ route('pembayaran.rekap') }}"
+        <a href="{{ route('pembayaran.rekap') }}" data-module="pembayaran"
            class="{{ $menuClass }} mt-1 {{ request()->routeIs('pembayaran.rekap') ? $active : $hover }}">
             <i data-feather="dollar-sign" class="w-4 h-4"></i>
             Rekap Pembayaran
@@ -220,9 +239,15 @@
             Keuangan
         </p>
 
-        <a href="{{ route('keuangan.index') }}"
-           class="{{ $menuClass }} {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+        <a href="{{ route('keuangan.cashflow') }}" data-module="keuangan"
+           class="{{ $menuClass }} {{ request()->routeIs('keuangan.cashflow') ? $active : $hover }}">
             <i data-feather="activity" class="w-4 h-4"></i>
+            Arus Kas (Cashflow)
+        </a>
+
+        <a href="{{ route('keuangan.index') }}" data-module="keuangan"
+           class="{{ $menuClass }} mt-1 {{ request()->routeIs('keuangan.index') ? $active : $hover }}">
+            <i data-feather="arrow-up-right" class="w-4 h-4"></i>
             Pengeluaran
         </a>
 
@@ -334,4 +359,14 @@
         </form>
     </div>
 
+<script>
+@if(auth()->check() && auth()->user()->role !== 'superadmin')
+const inactiveModules = @json(App\Models\ModuleSetting::where('is_active', false)->pluck('module'));
+document.querySelectorAll('aside [data-module]').forEach(el => {
+    if (inactiveModules.includes(el.dataset.module)) {
+        el.style.display = 'none';
+    }
+});
+@endif
+</script>
 </aside>

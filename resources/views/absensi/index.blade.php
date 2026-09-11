@@ -1,10 +1,25 @@
 @extends('layouts.app')
 
 @php
-    $bolehAbsen =
-        auth()->user()->isAdmin()
-        || auth()->user()->isAdminSekolah()
-        || (auth()->user()->isInstruktur() && $jadwal->isDalamJamAbsensi());
+    $user = auth()->user();
+    $bolehAbsen = false;
+
+    if ($user->role === 'superadmin') {
+        // Superadmin: boleh isi/edit semua jadwal
+        $bolehAbsen = true;
+    } elseif (in_array($user->role, ['admin_cabang', 'sekretaris'])) {
+        // Admin Cabang / Sekretaris: boleh jika jadwal milik cabangnya
+        $bolehAbsen = $jadwal->cabang_id == $user->cabang_id;
+    } elseif ($user->role === 'admin') {
+        // Admin system lama
+        $bolehAbsen = true;
+    } elseif ($user->role === 'admin_sekolah') {
+        // Admin sekolah: boleh jika jadwal milik sekolahnya
+        $bolehAbsen = $jadwal->sekolah_id == $user->sekolah_id;
+    } elseif ($user->isInstruktur() && $jadwal->isDalamJamAbsensi()) {
+        // Instruktur: boleh jika dalam jam pelajaran
+        $bolehAbsen = true;
+    }
 @endphp
 
 @section('header')

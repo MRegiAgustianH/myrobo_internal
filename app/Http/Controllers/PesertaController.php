@@ -20,7 +20,7 @@ class PesertaController extends Controller
     {
         return view('admin.peserta.index', [
             'sekolah'  => $sekolah,
-            'pesertas' => $sekolah->pesertas()->latest()->get(),
+            'pesertas' => $sekolah->pesertas()->latest()->paginate(15),
         ]);
     }
 

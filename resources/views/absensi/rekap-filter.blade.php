@@ -35,13 +35,28 @@ Rekap Absensi
             </select>
         </div>
 
+        {{-- CABANG (SUPERADMIN) --}}
+        @if(auth()->user()->role === 'superadmin' && isset($cabangs))
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cabang</label>
+                        <select name="cabang_id" class="w-full bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm">
+                            <option value="">-- Semua Cabang --</option>
+                            @foreach($cabangs as $cb)
+                                <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>
+                                    {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
         {{-- SEKOLAH --}}
         <div id="sekolah-wrapper">
             <label class="block text-sm font-medium text-gray-700 mb-1">
                 Sekolah
             </label>
 
-            @if(auth()->user()->isAdmin() || auth()->user()->role === 'sekretaris')
+            @if(in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'bendahara', 'sekretaris']))
                 <select name="sekolah_id"
                         id="sekolah_id"
                         class="w-full bg-white border border-[#E3EEF0]
@@ -61,7 +76,7 @@ Rekap Absensi
                        value="{{ auth()->user()->sekolah_id }}">
                 <div class="px-3 py-2 bg-white border border-[#E3EEF0]
                             rounded-lg text-sm text-gray-700">
-                    {{ auth()->user()->sekolah->nama_sekolah }}
+                    {{ auth()->user()->sekolah?->nama_sekolah ?? '-' }}
                 </div>
             @endif
         </div>
@@ -111,7 +126,7 @@ Rekap Absensi
 <form method="GET"
       action="{{ route('absensi.rekap.export-pdf') }}"
       target="_blank"
-      class="mb-4">
+      class="mb-4 inline-block">
 
     <input type="hidden" name="sekolah_id" value="{{ request('sekolah_id') }}">
     <input type="hidden" name="tanggal_mulai" value="{{ request('tanggal_mulai') }}">
@@ -125,7 +140,14 @@ Rekap Absensi
         Export PDF
     </button>
 </form>
+
+<a href="{{ route('absensi.rekap.export-excel') }}?sekolah_id={{ request('sekolah_id') }}&tanggal_mulai={{ request('tanggal_mulai') }}&tanggal_selesai={{ request('tanggal_selesai') }}&jenis_peserta={{ request('jenis_peserta') }}"
+   class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 mb-4 ml-2">
+    Export Excel
+</a>
 @endif
+
+@php $canEditAbsensi = in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris']); @endphp
 
 
 {{-- ================= GRID LAYOUT ================= --}}
@@ -184,6 +206,7 @@ Rekap Absensi
                         <th class="px-4 py-2 text-left">Instruktur</th>
                         <th class="px-4 py-2 text-left">Lokasi</th>
                         <th class="px-4 py-2 text-center">Tgl & Status</th>
+                        @if($canEditAbsensi)<th class="px-4 py-2 text-center">Aksi</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E3EEF0]">
@@ -209,10 +232,20 @@ Rekap Absensi
                                 {{ $ai->status }}
                             </span>
                         </td>
+                        @if($canEditAbsensi)
+                        <td class="px-4 py-2 text-center whitespace-nowrap">
+                            <button onclick="editAbsensiInstruktur({{ $ai->id }}, '{{ $ai->status }}', {{ json_encode($ai->keterangan) }}, '{{ $ai->tanggal->format('Y-m-d') }}')"
+                                class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">Edit</button>
+                            <form method="POST" action="{{ route('absensi-instruktur.destroy', $ai->id) }}" class="inline" onsubmit="return confirm('Hapus absensi ini?')">
+                                @csrf @method('DELETE')
+                                <button class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">Hapus</button>
+                            </form>
+                        </td>
+                        @endif
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">
+                        <td colspan="{{ $canEditAbsensi ? 5 : 4 }}" class="px-4 py-8 text-center text-gray-500 italic">
                             Tidak ada data absensi instruktur
                         </td>
                     </tr>
@@ -220,6 +253,8 @@ Rekap Absensi
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-4">{{$absensiInstrukturs->links()}}</div>
     </div>
 
     {{-- ================= RIGHT: PESERTA ================= --}}
@@ -279,6 +314,7 @@ Rekap Absensi
                         <th class="px-4 py-2 text-left">Peserta</th>
                         <th class="px-4 py-2 text-left">Lokasi</th>
                         <th class="px-4 py-2 text-center">Tgl & Status</th>
+                        @if($canEditAbsensi)<th class="px-4 py-2 text-center">Aksi</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[#E3EEF0]">
@@ -307,10 +343,20 @@ Rekap Absensi
                                 {{ $a->status }}
                             </span>
                         </td>
+                        @if($canEditAbsensi)
+                        <td class="px-4 py-2 text-center whitespace-nowrap">
+                            <button onclick="editAbsensi({{ $a->id }}, '{{ $a->status }}', {{ json_encode($a->keterangan) }}, '{{ optional($a->tanggal)->format('Y-m-d') }}')"
+                                class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs">Edit</button>
+                            <form method="POST" action="{{ route('absensi.destroy', $a->id) }}" class="inline" onsubmit="return confirm('Hapus absensi ini?')">
+                                @csrf @method('DELETE')
+                                <button class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">Hapus</button>
+                            </form>
+                        </td>
+                        @endif
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">
+                        <td colspan="{{ $canEditAbsensi ? 5 : 4 }}" class="px-4 py-8 text-center text-gray-500 italic">
                             Tidak ada data absensi peserta
                         </td>
                     </tr>
@@ -318,8 +364,12 @@ Rekap Absensi
                 </tbody>
             </table>
         </div>
+
+        <div class="mt-4">{{$absensis->links()}}</div>
     </div>
 </div>
+
+@endsection
 
 @push('scripts')
 <script>
@@ -331,8 +381,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSekolah() {
         if (jenisSelect.value === 'home_private') {
             sekolahWrap.classList.add('hidden');
-
-            // kosongkan value agar tidak ikut terkirim
             if (sekolahSelect) {
                 sekolahSelect.value = '';
             }
@@ -342,12 +390,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     jenisSelect.addEventListener('change', toggleSekolah);
-
-    // jalankan saat pertama load (penting untuk reload halaman)
     toggleSekolah();
 });
 </script>
+
+@if($canEditAbsensi)
+<script>
+    // ================= EDIT ABSENSI MODAL =================
+    window.editAbsensi = function(id, status, keterangan, tanggal) {
+        Swal.fire({
+            title: 'Edit Absensi Peserta',
+            html: absensiForm(status, keterangan, tanggal),
+            showConfirmButton: false,
+            width: 500,
+            footer: `<div class="flex gap-2">
+                <button onclick="submitAbsensi(${id})" class="bg-[#8FBFC2] text-white px-4 py-2 rounded-lg text-sm">Simpan</button>
+                <button onclick="Swal.close()" class="border px-4 py-2 rounded-lg text-sm">Batal</button>
+            </div>`
+        });
+    };
+
+    window.editAbsensiInstruktur = function(id, status, keterangan, tanggal) {
+        Swal.fire({
+            title: 'Edit Absensi Instruktur',
+            html: absensiForm(status, keterangan, tanggal),
+            showConfirmButton: false,
+            width: 500,
+            footer: `<div class="flex gap-2">
+                <button onclick="submitAbsensiInstruktur(${id})" class="bg-[#8FBFC2] text-white px-4 py-2 rounded-lg text-sm">Simpan</button>
+                <button onclick="Swal.close()" class="border px-4 py-2 rounded-lg text-sm">Batal</button>
+            </div>`
+        });
+    };
+
+    function absensiForm(status, keterangan, tanggal) {
+        const opts = ['hadir','sakit','izin','alfa'].map(s =>
+            `<label class="flex items-center gap-2">
+                <input type="radio" name="sw_status" value="${s}" ${s===status?'checked':''}>
+                <span class="capitalize">${s}</span>
+            </label>`
+        ).join('');
+        return `<div class="text-left text-sm space-y-3">
+            <div class="flex gap-4">${opts}</div>
+            <input id="sw_ket" class="w-full border rounded px-3 py-2" placeholder="Keterangan" value="${keterangan ?? ''}">
+            <input id="sw_tgl" type="date" class="w-full border rounded px-3 py-2" value="${tanggal ?? ''}">
+        </div>`;
+    }
+
+    function submitAbsensi(id) {
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = `/absensi/${id}`;
+        f.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="status" value="${document.querySelector('input[name=sw_status]:checked')?.value || 'alfa'}">
+            <input type="hidden" name="keterangan" value="${document.getElementById('sw_ket')?.value || ''}">
+            <input type="hidden" name="tanggal" value="${document.getElementById('sw_tgl')?.value || ''}">`;
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function submitAbsensiInstruktur(id) {
+        const f = document.createElement('form');
+        f.method = 'POST';
+        f.action = `/absensi-instruktur/${id}`;
+        f.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="status" value="${document.querySelector('input[name=sw_status]:checked')?.value || 'alfa'}">
+            <input type="hidden" name="keterangan" value="${document.getElementById('sw_ket')?.value || ''}">
+            <input type="hidden" name="tanggal" value="${document.getElementById('sw_tgl')?.value || ''}">`;
+        document.body.appendChild(f);
+        f.submit();
+    }
+    @endif
+</script>
 @endpush
-
-
-@endsection

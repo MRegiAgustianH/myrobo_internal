@@ -10,6 +10,7 @@ use App\Models\Peserta;
 use App\Models\Sekolah;
 use App\Models\Pembayaran;
 use App\Models\Keuangan;
+use App\Models\Cabang;
 use App\Models\RaporTugas;
 use App\Models\Rapor;
 use Illuminate\Http\Request;
@@ -23,7 +24,89 @@ class DashboardController extends Controller
         $tahun = now()->year;
 
         /* ==================================================
-         | ADMIN SISTEM
+         | SUPERADMIN: monitoring semua cabang
+         |================================================== */
+        if ($user->role === 'superadmin') {
+
+            $totalSekolah    = Sekolah::count();
+            $totalPeserta    = Peserta::count();
+            $totalInstruktur = User::where('role', 'instruktur')->count();
+            $totalJadwal     = Jadwal::count();
+
+            $pembayaranBelum = Pembayaran::where('status', 'belum')->count();
+            $pembayaranLunas = Pembayaran::where('status', 'lunas')->count();
+
+            $uangMasuk = Keuangan::where('tipe', 'masuk')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $uangKeluar = Keuangan::where('tipe', 'keluar')
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->sum('jumlah');
+
+            $saldo = $uangMasuk - $uangKeluar;
+
+            $cabangs = Cabang::withCount(['sekolahs', 'users', 'jadwals'])->get();
+            $totalCabang = $cabangs->count();
+
+            return view('dashboard-superadmin', compact(
+                'totalSekolah',
+                'totalPeserta',
+                'totalInstruktur',
+                'totalJadwal',
+                'pembayaranBelum',
+                'pembayaranLunas',
+                'uangMasuk',
+                'uangKeluar',
+                'saldo',
+                'bulan',
+                'tahun',
+                'cabangs',
+                'totalCabang'
+            ));
+        }
+
+        /* ==================================================
+         | ADMIN CABANG: scoped ke cabangnya saja
+         |================================================== */
+        if ($user->role === 'admin_cabang') {
+
+            $cabangId = $user->cabang_id;
+
+            $totalSekolah    = Sekolah::where('cabang_id', $cabangId)->count();
+            $totalPeserta    = Peserta::whereHas('sekolah', fn($q) => $q->where('cabang_id', $cabangId))->count();
+            $totalInstruktur = User::where('role', 'instruktur')->where('cabang_id', $cabangId)->count();
+            $totalJadwal     = Jadwal::where('cabang_id', $cabangId)->count();
+
+            $pembayaranBelum = Pembayaran::whereHas('sekolah', fn($q) => $q->where('cabang_id', $cabangId))->where('status', 'belum')->count();
+            $pembayaranLunas = Pembayaran::whereHas('sekolah', fn($q) => $q->where('cabang_id', $cabangId))->where('status', 'lunas')->count();
+
+            $uangMasuk = Keuangan::where('cabang_id', $cabangId)->where('tipe', 'masuk')->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->sum('jumlah');
+            $uangKeluar = Keuangan::where('cabang_id', $cabangId)->where('tipe', 'keluar')->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->sum('jumlah');
+            $saldo = $uangMasuk - $uangKeluar;
+
+            $cabang = $user->cabang;
+
+            return view('dashboard-admin-cabang', compact(
+                'totalSekolah',
+                'totalPeserta',
+                'totalInstruktur',
+                'totalJadwal',
+                'pembayaranBelum',
+                'pembayaranLunas',
+                'uangMasuk',
+                'uangKeluar',
+                'saldo',
+                'bulan',
+                'tahun',
+                'cabang'
+            ));
+        }
+
+        /* ==================================================
+         | ADMIN SISTEM (legacy)
          |================================================== */
         if ($user->role === 'admin') {
 
@@ -146,7 +229,6 @@ class DashboardController extends Controller
             $totalInstruktur = User::where('role', 'instruktur')->count();
             $totalSekolah = Sekolah::count();
 
-            // Jadwal stats
             $totalJadwal = Jadwal::count();
             $jadwalHariIni = Jadwal::whereDate('tanggal_mulai', Carbon::today())->count();
             $jadwalMingguIni = Jadwal::whereBetween('tanggal_mulai', [
@@ -192,7 +274,6 @@ class DashboardController extends Controller
                 ->orderBy('tanggal_mulai')
                 ->get();
 
-            // ===== TUGAS RAPOR =====
             $tugasRapors = RaporTugas::with(['sekolah', 'semester'])
                 ->withCount([
                     'rapors',

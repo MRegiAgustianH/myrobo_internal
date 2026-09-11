@@ -61,14 +61,13 @@
 
 <h3>Rekap Pembayaran</h3>
 
-@php
-    $bulanAngka = (int) $bulan;
-@endphp
-
 <p>
     <strong>Periode:</strong>
-    {{ \Carbon\Carbon::create()->month($bulanAngka)->translatedFormat('F') }}
-    {{ $tahun }}
+    @if(isset($mode) && $mode === 'periode')
+        TA {{ $tahunAjaran ?? '' }} {{ ucfirst($semester ?? '') }} - Periode {{ $periode ?? '' }}
+    @else
+        {{ isset($bulan) ? \Carbon\Carbon::create()->month((int)$bulan)->translatedFormat('F') : '' }} {{ $tahun ?? '' }}
+    @endif
 </p>
 
 <table>

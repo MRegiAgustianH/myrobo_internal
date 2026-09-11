@@ -168,6 +168,8 @@ Manajemen Materi
 
 </div>
 
+<div class="mt-4">{{$materis->links()}}</div>
+
 @if(! $readonly)
 {{-- ================= SCRIPT ================= --}}
 <script>

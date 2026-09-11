@@ -18,7 +18,16 @@
     </div>
 
     {{-- BACK --}}
-    <a href="{{ url()->previous() }}"
+    <div class="flex gap-2">
+        <a href="{{ route('rapor.cetak', $rapor->id) }}" target="_blank"
+           class="inline-flex items-center gap-2
+                  px-4 py-2 rounded-xl
+                  bg-indigo-600 hover:bg-indigo-700
+                  text-sm font-medium text-white transition">
+            <i data-feather="printer" class="w-4 h-4"></i>
+            Cetak Rapor
+        </a>
+        <a href="{{ url()->previous() }}"
        class="inline-flex items-center gap-2
               px-4 py-2 rounded-xl
               border border-gray-300
@@ -27,6 +36,7 @@
         <i data-feather="arrow-left" class="w-4 h-4"></i>
         Kembali
     </a>
+    </div>
 
 </div>
 @endsection
@@ -182,6 +192,8 @@
 {{-- ================= AKSI ADMIN ================= --}}
 @if(in_array($rapor->status, ['submitted','revision']))
 <div class="bg-white rounded-3xl shadow-sm border p-6 space-y-6">
+
+    
 
     {{-- APPROVE --}}
     <form method="POST"

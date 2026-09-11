@@ -52,7 +52,7 @@ class InstrukturRaporTugasController extends Controller
 
     public function create(RaporTugas $raporTugas, Peserta $peserta)
     {
-        // 🔐 Proteksi: hanya instruktur yg ditugaskan
+        //  Proteksi: hanya instruktur yg ditugaskan
         abort_if(
             $raporTugas->instruktur_id !== Auth::id(),
             403

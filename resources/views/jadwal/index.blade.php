@@ -12,8 +12,25 @@ Kalender Jadwal Pelatihan
 </div>
 @endif
 
+{{-- FILTER CABANG (SUPERADMIN) --}}
+@if(auth()->user()->role === 'superadmin' && isset($cabangs))
+<form method="GET" class="mb-4 flex gap-3 items-end">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Cabang</label>
+        <select name="cabang_id" class="bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">-- Semua Cabang --</option>
+            @foreach($cabangs as $cb)
+                <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>
+                    {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                </option>
+            @endforeach
+        </select>
+    </div>
+</form>
+@endif
+
 {{-- ADMIN BUTTON --}}
-@if(in_array(auth()->user()->role, ['admin', 'sekretaris']))
+@if(in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris']))
 <div class="flex justify-end mb-4">
     <button onclick="openCreateModal()"
         class="inline-flex items-center gap-2 bg-[#8FBFC2] hover:bg-[#6FA9AD] text-white px-4 py-2 rounded-lg text-sm transition">
@@ -51,14 +68,19 @@ document.addEventListener('DOMContentLoaded', function () {
         @foreach($jadwals as $j)
         {
             id: '{{ $j->id }}',
+            @if($j->status === 'dibatalkan')
+            title: '[DIBATALKAN] ' + '{{ addslashes($j->sekolah->nama_sekolah ?? ($j->homePrivate->nama_kegiatan ?? $j->nama_kegiatan)) }}',
+            @else
             title: '{{ addslashes($j->sekolah->nama_sekolah ?? ($j->homePrivate->nama_kegiatan ?? $j->nama_kegiatan)) }}',
+            @endif
             start: '{{ $j->tanggal_mulai }}T{{ $j->jam_mulai }}',
             end: (() => {
                 const d = new Date('{{ $j->tanggal_selesai }}T{{ $j->jam_selesai }}');
                 d.setMinutes(d.getMinutes() + 1);
                 return d.toISOString();
             })(),
-
+            backgroundColor: '{{ $j->status === "dibatalkan" ? "#f59e0b" : "#8FBFC2" }}',
+            borderColor: '{{ $j->status === "dibatalkan" ? "#d97706" : "#6FA9AD" }}',
         },
         @endforeach
     ];
@@ -99,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
         events,
 
         eventClick: function(info) {
-            @if(in_array(auth()->user()->role, ['admin', 'sekretaris']))
+            @if(in_array(auth()->user()->role, ['superadmin', 'admin', 'admin_cabang', 'sekretaris']))
             openDetailModal(info.event.id);
             @endif
         },
@@ -137,6 +159,8 @@ document.addEventListener('DOMContentLoaded', function () {
             allowOutsideClick: () => !Swal.isLoading(),
 
             preConfirm: () => {
+                const cb = document.getElementById('cabang_id');
+                if (cb) filterFormMasterData(cb.value);
                 const mode = document.getElementById('mode_penjadwalan').value;
 
                 const action = mode === 'single'
@@ -158,6 +182,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const jadwal = jadwalMap[id];
 
+        // Trigger initial filtering after open
+        setTimeout(() => {
+            const cb = document.getElementById('cabang_id');
+            if (cb) filterFormMasterData(cb.value);
+        }, 100);
+
         Swal.fire({
             title: 'Edit Jadwal',
             html: jadwalForm(jadwal),
@@ -175,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
             allowOutsideClick: () => !Swal.isLoading(),
 
             preConfirm: () => {
-                return handleSubmit(`/jadwal/${jadwal.id}`, 'PUT');
+                return handleSubmit(`/jadwal/${id}`, 'PUT');
             }
         });
     }
@@ -241,6 +271,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
 
                 <div>
+                    <p class="font-semibold">Status</p>
+                    <p class="${j.status === 'dibatalkan' ? 'text-orange-600 font-semibold' : 'text-green-600 font-semibold'}">
+                        ${j.status === 'dibatalkan' ? 'DIBATALKAN' : (j.status === 'aktif' ? 'AKTIF' : 'NONAKTIF')}
+                    </p>
+                </div>
+
+                <div>
                     <p class="font-semibold">Materi</p>
                     <p>
                     ${
@@ -255,17 +292,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 <hr>
 
                 <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="openEditModal(${j.id})"
+                    <button onclick="openEditModal(${id})"
                         class="px-3 py-1 bg-yellow-500 text-white rounded text-sm">
                         Edit
                     </button>
 
-                    <button onclick="deleteJadwal(${j.id})"
+                    <button onclick="batalkanJadwal(${id})"
+                        class="px-3 py-1 bg-orange-500 text-white rounded text-sm">
+                        Batalkan
+                    </button>
+
+                    <button onclick="deleteJadwal(${id})"
                         class="px-3 py-1 bg-red-600 text-white rounded text-sm">
                         Hapus
                     </button>
 
-                    <a href="/absensi/jadwal/${j.id}"
+                    <a href="/absensi/jadwal/${id}"
                         class="px-3 py-1 bg-blue-600 text-white rounded text-sm">
                         Lihat Absensi
                     </a>
@@ -280,7 +322,40 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+    function batalkanJadwal(id) {
+        if (!id || id === 'undefined') {
+            Swal.fire('Error', 'ID jadwal tidak ditemukan', 'error');
+            return;
+        }
+        Swal.fire({
+            title: 'Batalkan Jadwal?',
+            text: 'Jadwal akan ditandai sebagai dibatalkan (libur/acara). Tidak akan dihapus, hanya status berubah.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Batal'
+        }).then(result => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/jadwal/${id}/batalkan`;
+                form.innerHTML = `
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="_method" value="PATCH">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
     function deleteJadwal(id) {
+        if (!id || id === 'undefined') {
+            Swal.fire('Error', 'ID jadwal tidak ditemukan', 'error');
+            return;
+        }
         Swal.fire({
             title: 'Hapus Jadwal?',
             text: 'Data tidak dapat dikembalikan',
@@ -325,6 +400,27 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
 
 
+            <!-- CABANG (ROLE BASED) -->
+            @if(in_array(auth()->user()->role, ['superadmin', 'sekretaris']))
+            <div>
+                <label class="block mb-1 font-medium">Cabang</label>
+                <select id="cabang_id" class="w-full rounded-lg border px-3 py-2" onchange="filterFormMasterData(this.value)">
+                    <option value="">-- Pilih Cabang --</option>
+                    @foreach($cabangs as $cb)
+                        <option value="{{ $cb->id }}" ${data.cabang_id == {{ $cb->id }} ? 'selected' : ''}>
+                            {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @else
+            <div>
+                <label class="block mb-1 font-medium">Cabang</label>
+                <input type="hidden" id="cabang_id" value="{{ auth()->user()->cabang_id }}">
+                <input type="text" class="w-full rounded-lg border px-3 py-2 bg-gray-50" value="{{ auth()->user()->cabang?->nama_cabang ?? '-' }}" readonly>
+            </div>
+            @endif
+
             <!-- JENIS JADWAL -->
             <div>
                 <label class="block mb-1 font-medium">Jenis Jadwal</label>
@@ -342,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <select id="sekolah_id"
                     class="w-full rounded-lg border px-3 py-2">
                     @foreach($sekolahs as $s)
-                        <option value="{{ $s->id }}" ${data.sekolah_id == {{ $s->id }} ? 'selected' : ''}>
+                        <option value="{{ $s->id }}" data-cabang="{{ $s->cabang_id }}" ${data.sekolah_id == {{ $s->id }} ? 'selected' : ''}>
                             {{ $s->nama_sekolah }}
                         </option>
                     @endforeach
@@ -354,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <select id="home_private_id"
                     class="w-full rounded-lg border px-3 py-2">
                     @foreach($homePrivates as $hp)
-                        <option value="{{ $hp->id }}" ${data.home_private_id == {{ $hp->id }} ? 'selected' : ''}>
+                        <option value="{{ $hp->id }}" data-cabang="{{ $hp->cabang_id }}" ${data.home_private_id == {{ $hp->id }} ? 'selected' : ''}>
                             {{ $hp->nama_kegiatan }}
                         </option>
                     @endforeach
@@ -401,6 +497,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 </select>
             </div>
 
+            <!-- SKIP TANGGAL LIBUR (KHUSUS RECURRING) -->
+            <div id="skipDatesField" class="mb-4" style="display:none">
+                <label class="block mb-1 font-medium">Tanggal Libur / Skip (opsional)</label>
+                <textarea id="skip_dates" rows="3"
+                    class="w-full rounded-lg border px-3 py-2 text-sm"
+                    placeholder="Masukkan tanggal yang diskip, satu per baris. Contoh:&#10;2026-09-17&#10;2026-10-12"></textarea>
+                <p class="text-xs text-gray-500 mt-1">Tanggal libur / acara sekolah yang TIDAK dibuat jadwal</p>
+            </div>
+
             <!-- JAM -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -423,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <select id="instrukturs" multiple
                     class="w-full rounded-lg border px-3 py-2">
                     @foreach($instrukturs as $i)
-                        <option value="{{ $i->id }}"
+                        <option value="{{ $i->id }}" data-cabang="{{ $i->cabang_id }}"
                             ${(data.instrukturs ?? []).includes({{ $i->id }}) ? 'selected' : ''}>
                             {{ $i->name }}
                         </option>
@@ -462,6 +567,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
 
+    function filterFormMasterData(cabangId) {
+        const sekolahSelect = document.getElementById('sekolah_id');
+        const homePrivateSelect = document.getElementById('home_private_id');
+        const instrukturSelect = document.getElementById('instrukturs');
+
+        if (!cabangId) {
+            // Show all options if no cabang is selected
+            if (sekolahSelect) [...sekolahSelect.options].forEach(opt => opt.hidden = false);
+            if (homePrivateSelect) [...homePrivateSelect.options].forEach(opt => opt.hidden = false);
+            if (instrukturSelect) [...instrukturSelect.options].forEach(opt => opt.hidden = false);
+            return;
+        }
+
+        // Filter Sekolah
+        if (sekolahSelect) {
+            let firstVisible = null;
+            [...sekolahSelect.options].forEach(opt => {
+                const belongs = opt.getAttribute('data-cabang') === cabangId;
+                opt.hidden = !belongs;
+                if (belongs && !firstVisible) firstVisible = opt;
+            });
+            if (firstVisible && !sekolahSelect.value) {
+                sekolahSelect.value = firstVisible.value;
+            }
+        }
+
+        // Filter Home Private
+        if (homePrivateSelect) {
+            let firstVisible = null;
+            [...homePrivateSelect.options].forEach(opt => {
+                const belongs = opt.getAttribute('data-cabang') === cabangId;
+                opt.hidden = !belongs;
+                if (belongs && !firstVisible) firstVisible = opt;
+            });
+            if (firstVisible && !homePrivateSelect.value) {
+                homePrivateSelect.value = firstVisible.value;
+            }
+        }
+
+        // Filter Instruktur
+        if (instrukturSelect) {
+            [...instrukturSelect.options].forEach(opt => {
+                opt.hidden = opt.getAttribute('data-cabang') !== cabangId;
+            });
+        }
+    }
+
     function toggleJenis(val) {
     document.getElementById('sekolahField').style.display =
         val === 'sekolah' ? 'block' : 'none';
@@ -474,38 +626,38 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
     function handleSubmit(action, method) {
 
+        const cabang = document.getElementById('cabang_id')?.value;
         const jenis = document.getElementById('jenis_jadwal').value;
         const nama  = document.getElementById('nama_kegiatan').value;
+
+        if (!cabang) {
+            Swal.showValidationMessage('Cabang wajib dipilih'); return false;
+        }
         const sekolah = document.getElementById('sekolah_id')?.value;
         const homePrivate = document.getElementById('home_private_id')?.value;
 
         const instrukturs = [...document.getElementById('instrukturs').selectedOptions];
         if (instrukturs.length === 0) {
-            Swal.showValidationMessage('Minimal 1 instruktur harus dipilih');
-            return Promise.reject();
+            Swal.showValidationMessage('Minimal 1 instruktur harus dipilih'); return false;
         }
 
         const materis = [...document.getElementById('materis').selectedOptions];
         if (materis.length > 2) {
-            Swal.showValidationMessage('Maksimal 2 materi');
-            return Promise.reject();
+            Swal.showValidationMessage('Maksimal 2 materi'); return false;
         }
 
 
 
         if (!nama) {
-            Swal.showValidationMessage('Nama kegiatan wajib diisi');
-            return Promise.reject();
+            Swal.showValidationMessage('Nama kegiatan wajib diisi'); return false;
         }
 
         if (jenis === 'sekolah' && !sekolah) {
-            Swal.showValidationMessage('Sekolah wajib dipilih');
-            return Promise.reject();
+            Swal.showValidationMessage('Sekolah wajib dipilih'); return false;
         }
 
         if (jenis === 'home_private' && !homePrivate) {
-            Swal.showValidationMessage('Home Private wajib dipilih');
-            return Promise.reject();
+            Swal.showValidationMessage('Home Private wajib dipilih'); return false;
         }
 
         return submitFormAjax(action, method);
@@ -533,8 +685,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (mode !== 'single') {
             formData.append('hari', document.getElementById('hari').value);
+            const skipDates = document.getElementById('skip_dates')?.value || '';
+            formData.append('skip_dates', skipDates);
         }
 
+        const cabangVal = document.getElementById('cabang_id')?.value || '';
+        formData.append('cabang_id', cabangVal);
         formData.append('jenis_jadwal', jenis);
         formData.append('nama_kegiatan', document.getElementById('nama_kegiatan').value);
         formData.append('tanggal_mulai', document.getElementById('tanggal_mulai').value);
@@ -572,7 +728,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => {
             console.error('ERROR RESPONSE:', error);
             handleAjaxError(error);
-            return Promise.reject();
+            Swal.hideLoading();
+            return false;
         });
 
 
@@ -603,8 +760,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function toggleRecurring(mode) {
-        document.getElementById('hariField').style.display =
-            mode === 'single' ? 'none' : 'block';
+        const show = mode !== 'single';
+        document.getElementById('hariField').style.display = show ? 'block' : 'none';
+        document.getElementById('skipDatesField').style.display = show ? 'block' : 'none';
     }
 
 

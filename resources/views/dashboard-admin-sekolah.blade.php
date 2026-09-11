@@ -15,7 +15,7 @@ Dashboard Admin Sekolah
     </p>
     <p class="text-xs text-gray-500 mt-1">
         Periode
-        {{ \Carbon\Carbon::create()->month($bulan)->translatedFormat('F') }}
+        {{ \Carbon\Carbon::create()->month((int) $bulan)->translatedFormat('F') }}
         {{ $tahun }}
     </p>
 </div>

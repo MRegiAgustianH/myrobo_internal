@@ -13,6 +13,22 @@ Kelola Home Private
 @endif
 
 {{-- ACTION BAR --}}
+@if(auth()->user()->role === 'superadmin' && isset($cabangs))
+<form method="GET" class="mb-4 flex gap-3 items-end">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Cabang</label>
+        <select name="cabang_id" class="bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">-- Semua Cabang --</option>
+            @foreach($cabangs as $cb)
+                <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>
+                    {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                </option>
+            @endforeach
+        </select>
+    </div>
+</form>
+@endif
+
 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
     <h2 class="text-lg font-semibold text-gray-700">
         Daftar Home Private
@@ -108,6 +124,8 @@ Kelola Home Private
 @endforeach
 </div>
 
+
+<div class="mt-4">{{$homePrivates->links()}}</div>
 
 @endsection
 

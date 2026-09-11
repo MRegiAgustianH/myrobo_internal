@@ -6,6 +6,24 @@ Pengeluaran
 
 @section('content')
 
+@if(auth()->user()->role === 'superadmin' && isset($cabangs))
+<form method="GET" class="mb-4">
+    <div class="flex items-end gap-3">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Filter Cabang</label>
+            <select name="cabang_id" class="bg-white border border-[#E3EEF0] rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+                <option value="">-- Semua Cabang --</option>
+                @foreach($cabangs as $cb)
+                    <option value="{{ $cb->id }}" {{ (string)request('cabang_id') === (string)$cb->id ? 'selected' : '' }}>
+                        {{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+</form>
+@endif
+
 @if(session('success'))
 <div class="mb-4 p-4 rounded-xl bg-green-50 text-green-700 border border-green-200">
     {{ session('success') }}
@@ -74,6 +92,8 @@ Pengeluaran
                 <button
                     onclick="openEditModal(this)"
                     data-id="{{ $p->id }}"
+                    data-tipe="{{ $p->tipe }}"
+                    data-cabang_id="{{ $p->cabang_id }}"
                     data-tanggal="{{ $p->tanggal }}"
                     data-kategori="{{ $p->kategori }}"
                     data-deskripsi="{{ $p->deskripsi }}"
@@ -114,6 +134,8 @@ Pengeluaran
     <div class="mt-3 flex justify-end gap-4 text-sm">
         <button onclick="openEditModal(this)"
                 data-id="{{ $p->id }}"
+                    data-tipe="{{ $p->tipe }}"
+                    data-cabang_id="{{ $p->cabang_id }}"
                 data-tanggal="{{ $p->tanggal }}"
                 data-kategori="{{ $p->kategori }}"
                 data-deskripsi="{{ $p->deskripsi }}"
@@ -141,6 +163,23 @@ Pengeluaran
 
     <form method="POST" action="{{ route('keuangan.store') }}">
         @csrf
+        <input type="hidden" name="tipe" value="keluar">
+
+        @if(auth()->user()->role === 'superadmin')
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Cabang
+            </label>
+            <select name="cabang_id" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+                <option value="">-- Pilih Cabang --</option>
+                @foreach($cabangs as $cb)
+                    <option value="{{ $cb->id }}">{{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})</option>
+                @endforeach
+            </select>
+        </div>
+        @else
+        <input type="hidden" name="cabang_id" value="{{ auth()->user()->cabang_id }}">
+        @endif
 
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -207,6 +246,24 @@ Pengeluaran
     <form id="editForm" method="POST">
         @csrf
         @method('PUT')
+        <input type="hidden" name="tipe" id="editTipe" value="">
+
+        @if(auth()->user()->role === 'superadmin')
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Cabang
+            </label>
+            <select name="cabang_id" id="editCabangId" class="w-full border rounded-lg px-3 py-2 text-sm">
+                <option value="">-- Pilih Cabang --</option>
+                @foreach($cabangs as $cb)
+                    <option value="{{ $cb->id }}">{{ $cb->nama_cabang }} ({{ $cb->kode_cabang }})</option>
+                @endforeach
+            </select>
+        </div>
+        @else
+        <input type="hidden" name="cabang_id" id="editCabangId" value="{{ auth()->user()->cabang_id }}">
+        @endif
+
 
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -298,6 +355,8 @@ function closeCreateModal(){ hideModal(createModal); }
 
 function openEditModal(el){
     editForm.action = "{{ url('keuangan') }}/" + el.dataset.id;
+    editTipe.value      = el.dataset.tipe;
+    editCabangId.value = el.dataset.cabang_id || '';
     editTanggal.value   = el.dataset.tanggal;
     editKategori.value  = el.dataset.kategori;
     editJumlah.value    = el.dataset.jumlah;

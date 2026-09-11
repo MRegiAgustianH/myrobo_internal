@@ -10,14 +10,65 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // ADMIN
+        // SUPERADMIN
         User::updateOrCreate(
-            ['email' => 'admin@myrobo.id'],
+            ['email' => 'superadmin@myrobo.id'],
             [
-                'username' => 'admin',
-                'name'     => 'Admin MyRobo',
-                'password' => Hash::make('admin123'),
-                'role'     => 'admin',
+                'username' => 'superadmin',
+                'name'     => 'Superadmin MyRobo',
+                'password' => Hash::make('superadmin123'),
+                'role'     => 'superadmin',
+            ]
+        );
+
+        $cjr = \App\Models\Cabang::where('kode_cabang', 'CJR001')->first();
+        $bdg = \App\Models\Cabang::where('kode_cabang', 'BDG001')->first();
+
+        // ADMIN CABANG CIANJUR
+        User::updateOrCreate(
+            ['email' => 'admin_cjr@myrobo.id'],
+            [
+                'username' => 'admincjr',
+                'name'     => 'Admin Cabang Cianjur',
+                'password' => Hash::make('cjr123'),
+                'role'     => 'admin_cabang',
+                'cabang_id'=> $cjr ? $cjr->id : null,
+            ]
+        );
+
+        // ADMIN CABANG BANDUNG
+        User::updateOrCreate(
+            ['email' => 'admin_bdg@myrobo.id'],
+            [
+                'username' => 'adminbdg',
+                'name'     => 'Admin Cabang Bandung',
+                'password' => Hash::make('bdg123'),
+                'role'     => 'admin_cabang',
+                'cabang_id'=> $bdg ? $bdg->id : null,
+            ]
+        );
+
+        // BENDAHARA CABANG CIANJUR
+        User::updateOrCreate(
+            ['email' => 'bendahara_cjr@myrobo.id'],
+            [
+                'username' => 'bendaharacjr',
+                'name'     => 'Bendahara Cianjur',
+                'password' => Hash::make('bendahara123'),
+                'role'     => 'bendahara',
+                'cabang_id'=> $cjr ? $cjr->id : null,
+            ]
+        );
+
+        // SEKRETARIS CABANG CIANJUR
+        User::updateOrCreate(
+            ['email' => 'sekretaris_cjr@myrobo.id'],
+            [
+                'username' => 'sekretariscjr',
+                'name'     => 'Sekretaris Cianjur',
+                'password' => Hash::make('sekretaris123'),
+                'role'     => 'sekretaris',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
 
@@ -29,6 +80,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Aling',
                 'password' => Hash::make('aling123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -38,6 +90,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Bagus',
                 'password' => Hash::make('bagus123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -47,6 +100,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Gina',
                 'password' => Hash::make('gina123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -56,6 +110,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Abiyyatun',
                 'password' => Hash::make('abiyyatun123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -65,6 +120,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Rizki',
                 'password' => Hash::make('rizki123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -74,6 +130,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Devina',
                 'password' => Hash::make('devina123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         User::updateOrCreate(
@@ -83,6 +140,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Nabila',
                 'password' => Hash::make('nabila123'),
                 'role'     => 'instruktur',
+                'cabang_id'=> $cjr ? $cjr->id : null,
             ]
         );
         
