@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Ubah enum role untuk menambah superadmin & admin_cabang
+        // Tambah role superadmin & admin_cabang
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('superadmin','admin','admin_cabang','admin_sekolah','instruktur','bendahara','sekretaris') DEFAULT 'instruktur'");
     }
 

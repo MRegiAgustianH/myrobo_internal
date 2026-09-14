@@ -9,18 +9,27 @@
 {{-- SIDEBAR --}}
 <aside
     class="fixed md:static inset-y-0 left-0 z-40
-           w-64 md:w-56
+           w-64 max-w-[85vw] md:max-w-none md:w-56
            min-h-screen
-           bg-gradient-to-b from-[#8FBFC2] to-[#7FB3B8]
+           bg-[#8FBFC2]
            transform transition-transform duration-300 ease-out
            -translate-x-full md:translate-x-0
            flex flex-col text-gray-800 shadow-xl"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
-    {{-- LOGO --}}
-    <div class="flex justify-center items-center pt-4 pb-2 shrink-0">
+    {{-- LOGO + TOMBOL TUTUP (MOBILE) --}}
+    <div class="relative flex justify-center items-center pt-4 pb-2 shrink-0">
         <img src="{{ asset('images/applogo.png') }}"
-            class="h-24 object-contain drop-shadow-sm select-none">
+            class="h-16 md:h-24 object-contain drop-shadow-sm select-none">
+
+        <button
+            @click="sidebarOpen = false"
+            class="absolute top-3 right-3 p-2 rounded-lg
+                   text-gray-700 hover:bg-white/60 active:bg-white/80
+                   transition md:hidden"
+            aria-label="Tutup menu">
+            <i data-feather="x" class="w-5 h-5"></i>
+        </button>
     </div>
 
 

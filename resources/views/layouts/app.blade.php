@@ -64,19 +64,23 @@
     @include('layouts.navigation')
 
     {{-- MAIN --}}
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col min-w-0">
 
         {{-- TOP BAR (MOBILE) --}}
-        <header class="bg-white shadow px-4 py-3 flex items-center gap-3 md:hidden">
-            <button @click="sidebarOpen = true" class="text-xl">
+        <header class="bg-white shadow px-3 py-2.5 flex items-center gap-2 md:hidden sticky top-0 z-20">
+            <button
+                @click="sidebarOpen = true"
+                class="p-2 -ml-1 rounded-lg text-2xl leading-none
+                       hover:bg-gray-100 active:bg-gray-200 transition"
+                aria-label="Buka menu">
                 ☰
             </button>
-            <span class="font-semibold">MyRobo</span>
+            <span class="font-semibold truncate">MyRobo</span>
         </header>
 
-        <main class="flex-1 p-4 md:p-6">
+        <main class="flex-1 p-3 sm:p-4 md:p-6 min-w-0">
             @hasSection('header')
-                <h1 class="text-xl font-semibold mb-6">
+                <h1 class="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 leading-snug">
                     @yield('header')
                 </h1>
             @endif

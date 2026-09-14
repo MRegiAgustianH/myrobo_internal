@@ -10,18 +10,25 @@ Dashboard Instruktur
 {{-- PROFIL RINGKAS --}}
 {{-- ========================= --}}
 <div
-    class="bg-[#F6FAFB] border border-[#E3EEF0]
-           rounded-2xl shadow-sm p-5 mb-6">
+    class="bg-teal-50 border border-teal-200
+           rounded-xl shadow-sm p-5 mb-6">
 
-    <p class="text-sm text-gray-500">Selamat datang</p>
+    <div class="flex items-center justify-between gap-3">
+        <div>
+            <p class="text-xs text-teal-600 font-medium uppercase tracking-wide">Selamat datang</p>
 
-    <p class="text-lg font-semibold text-gray-800">
-        {{ Auth::user()->name }}
-    </p>
+            <p class="text-lg font-bold text-teal-700">
+                {{ Auth::user()->name }}
+            </p>
 
-    <p class="text-xs text-gray-500 capitalize">
-        Instruktur
-    </p>
+            <p class="text-xs text-teal-500 capitalize">
+                Instruktur
+            </p>
+        </div>
+        <div class="p-3 rounded-lg bg-teal-500 shadow-lg">
+            <i data-feather="user-check" class="w-5 h-5 text-white"></i>
+        </div>
+    </div>
 </div>
 
 {{-- ========================= --}}
@@ -30,23 +37,26 @@ Dashboard Instruktur
 <div class="mb-8">
 
     <h2
-        class="text-sm font-semibold text-gray-800 mb-3
+        class="text-sm font-bold text-gray-800 mb-3
                flex items-center gap-2">
-        <i data-feather="calendar" class="w-4 h-4 text-gray-500"></i>
+        <span class="p-1.5 rounded-lg bg-teal-500">
+            <i data-feather="calendar" class="w-3.5 h-3.5 text-white"></i>
+        </span>
         Jadwal Hari Ini
     </h2>
 
     @forelse($jadwalsHariIni as $j)
         <div
-            class="bg-white border border-[#E3EEF0]
-                   rounded-2xl shadow-sm p-4 mb-3
-                   hover:bg-[#F6FAFB] transition">
+            class="bg-blue-50 border border-blue-200
+                   rounded-xl shadow-sm p-4 mb-3
+                   hover:shadow-lg hover:border-blue-300
+                   transition-all duration-300">
 
-            <p class="font-semibold text-sm text-gray-800">
+            <p class="font-semibold text-sm text-blue-700">
                 {{ $j->nama_kegiatan }}
             </p>
 
-            <div class="mt-2 text-xs text-gray-600 space-y-1">
+            <div class="mt-2 text-xs text-blue-600 space-y-1">
 
                 <p class="flex items-center gap-2">
                     <i data-feather="home" class="w-3.5 h-3.5"></i>
@@ -64,8 +74,8 @@ Dashboard Instruktur
             <a
                 href="{{ route('absensi.index', $j->id) }}"
                 class="inline-flex items-center gap-2 mt-4
-                       bg-[#8FBFC2] hover:bg-[#6FA9AD]
-                       text-gray-900 text-xs font-medium
+                       bg-blue-500 hover:bg-blue-600
+                       text-white text-xs font-medium
                        px-4 py-2 rounded-lg transition">
 
                 <i data-feather="edit-3" class="w-3.5 h-3.5"></i>
@@ -74,7 +84,7 @@ Dashboard Instruktur
         </div>
     @empty
         <div
-            class="bg-[#F6FAFB] border border-[#E3EEF0]
+            class="bg-gray-50 border border-gray-200
                    text-center text-sm text-gray-500
                    py-6 rounded-xl">
 
@@ -89,35 +99,39 @@ Dashboard Instruktur
 <div>
 
     <h2
-        class="text-sm font-semibold text-gray-800 mb-3
+        class="text-sm font-bold text-gray-800 mb-3
                flex items-center gap-2">
-        <i data-feather="calendar-range" class="w-4 h-4 text-gray-500"></i>
+        <span class="p-1.5 rounded-lg bg-violet-500">
+            <i data-feather="calendar-range" class="w-3.5 h-3.5 text-white"></i>
+        </span>
         Jadwal Minggu Ini
     </h2>
 
     <div class="space-y-3">
         @forelse($jadwalsMingguan as $j)
             <div
-                class="bg-white border border-[#E3EEF0]
+                class="bg-violet-50 border border-violet-200
                        rounded-xl shadow-sm p-4
                        flex flex-col sm:flex-row
-                       sm:justify-between sm:items-center gap-3">
+                       sm:justify-between sm:items-center gap-3
+                       hover:shadow-lg hover:border-violet-300
+                       transition-all duration-300">
 
                 <div>
-                    <p class="font-medium text-sm text-gray-800">
+                    <p class="font-semibold text-sm text-violet-700">
                         {{ $j->nama_kegiatan }}
                     </p>
 
-                    <p class="text-xs text-gray-500 mt-0.5">
+                    <p class="text-xs text-violet-500 mt-0.5">
                         {{ \Carbon\Carbon::parse($j->tanggal_mulai)->format('d M Y') }}
                         • {{ $j->jam_mulai }} – {{ $j->jam_selesai }}
                     </p>
                 </div>
 
-                <span class="text-xs bg-[#F6FAFB]
-                    border border-[#E3EEF0]
+                <span class="text-xs bg-white
+                    border border-violet-200
                     px-3 py-1 rounded-full
-                    text-gray-700">
+                    text-violet-700 font-medium whitespace-nowrap self-start sm:self-auto">
 
                     {{ $j->sekolah?->nama_sekolah ?? 'Home Private' }}
                 </span>
@@ -125,7 +139,7 @@ Dashboard Instruktur
             </div>
         @empty
             <div
-                class="bg-[#F6FAFB] border border-[#E3EEF0]
+                class="bg-gray-50 border border-gray-200
                        text-center text-sm text-gray-500
                        py-5 rounded-xl">
 
