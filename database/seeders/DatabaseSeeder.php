@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             KompetensiSeeder::class,
             IndikatorKompetensiSeeder::class,
             PermissionSeeder::class,
+            ModuleSettingSeeder::class,
         ]);
     }
 }
